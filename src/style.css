@@ -256,4 +256,7 @@
 
   .bg-gradient-linear-1 { background: var(--gradient-linear-1); }
   .bg-gradient-linear-2 { background: var(--gradient-linear-2); }
+
+  .shadow-1 { box-shadow: var(--shadow-1); }
+  .shadow-2 { box-shadow: var(--shadow-2); }
 }
