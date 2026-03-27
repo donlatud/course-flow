@@ -239,7 +239,18 @@
     }
   }
 
-  .animate-app-toast-progress {
-    animation: app-toast-progress 4s linear forwards;
-  }
+  .bg-orange-100 { background-color: var(--color-orange-100); }
+  .bg-orange-500 { background-color: var(--color-orange-500); }
+
+  .bg-black { background-color: var(--color-black); }
+  .bg-white { background-color: var(--color-white); }
+  .bg-green { background-color: var(--color-green); }
+  .bg-purple { background-color: var(--color-purple); }
+  .border-purple { border-color: var(--color-purple); }
+
+  .bg-gradient-linear-1 { background: var(--gradient-linear-1); }
+  .bg-gradient-linear-2 { background: var(--gradient-linear-2); }
+
+  .shadow-1 { box-shadow: var(--shadow-1); }
+  .shadow-2 { box-shadow: var(--shadow-2); }
 }

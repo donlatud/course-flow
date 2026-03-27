@@ -20,25 +20,23 @@ const forwardedProps = useForwardProps(delegatedProps)
 
 <template>
   <SelectItem
-    data-slot="select-item"
     v-bind="forwardedProps"
-    :class="
-      cn(
-        'focus:bg-accent focus:text-accent-foreground [&_svg:not([class*=\'text-\'])]:text-muted-foreground relative flex w-full cursor-default items-center gap-2 rounded-sm py-1.5 pr-8 pl-2 text-sm outline-hidden select-none data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*=\'size-\'])]:size-4 *:[span]:last:flex *:[span]:last:items-center *:[span]:last:gap-2',
-        props.class,
-      )
-    "
+    :class="cn(
+      // ปรับ padding-left (pl-4) ให้เท่ากับตอนไม่เลือก เพราะเราเอาเครื่องหมายถูกออกแล้ว
+      'relative flex w-full cursor-default items-center rounded-sm py-2 px-4 text-sm outline-none select-none transition-colors',
+      
+      // เมื่อเอาเมาส์วาง (Focus)
+      'focus:bg-gray-100 focus:text-accent-foreground',
+      
+      // เมื่อรายการนี้ถูกเลือก (Checked) ให้เปลี่ยนสีพื้นหลัง (ตามรูป Frame 427321029)
+      'data-[state=checked]:bg-gray-100 data-[state=checked]:font-medium', 
+      
+      props.class,
+    )"
   >
-    <span class="absolute right-2 flex size-3.5 items-center justify-center">
-      <SelectItemIndicator>
-        <slot name="indicator-icon">
-          <Check class="size-4" />
-        </slot>
-      </SelectItemIndicator>
-    </span>
-
     <SelectItemText>
       <slot />
     </SelectItemText>
-  </SelectItem>
+
+    </SelectItem>
 </template>
