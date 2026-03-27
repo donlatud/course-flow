@@ -35,5 +35,6 @@ function showErrorToast() {
     <Toaster position="bottom-right" :offset="{ bottom: 16, right: 16 }" />
   </main>
 
+  <RouterView />
   
 </template>
