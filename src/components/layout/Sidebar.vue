@@ -213,7 +213,7 @@ const isActive = (path: string) => route.path === path;
             class="text-blue-300 transition-colors group-hover:text-blue-500"
             stroke-width="1.6"
           />
-          <span>Assignment</span>
+          <span class="textlist">Assignment</span>
         </RouterLink>
 
         <RouterLink
