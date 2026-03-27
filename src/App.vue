@@ -28,7 +28,10 @@ function showErrorToast() {
             </SecondaryButton>
           </div>
       </section>
+
     </div>
+
+ 
     <Toaster position="bottom-right" :offset="{ bottom: 16, right: 16 }" />
   </main>
 
