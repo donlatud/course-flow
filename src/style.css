@@ -43,6 +43,66 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+
+  /* App palette tokens for Tailwind utilities */
+  --color-blue-100: #e5ecf8;
+  --color-blue-200: #c6d6ef;
+  --color-blue-300: #8dade0;
+  --color-blue-400: #5483d0;
+  --color-blue-500: #2f5fac;
+  --color-blue-600: #234781;
+  --color-blue-700: #183056;
+  --color-blue-800: #0c182b;
+  --color-blue-900: #020d1e;
+  --color-gray-100: #f6f7fc;
+  --color-gray-200: #f1f2f6;
+  --color-gray-300: #e4e6ed;
+  --color-gray-400: #d6d9e4;
+  --color-gray-500: #c8ccdb;
+  --color-gray-600: #9aa1b9;
+  --color-gray-700: #646d89;
+  --color-gray-800: #424c6b;
+  --color-gray-900: #2a2e3f;
+  --color-orange-100: #fbaa1c;
+  --color-orange-500: #f47e20;
+  --color-black: #000000;
+  --color-white: #ffffff;
+  --color-green: #2fac8e;
+  --color-purple: #9B2FAC;
+  --background-image-gradient-linear-1: linear-gradient(109.54deg, #95beff 18.21%, #0040e6 95.27%);
+  --background-image-gradient-linear-2: linear-gradient(270.94deg, #5697ff 7.78%, #2558dd 73.86%);
+  --shadow-1: 4px 4px 24px 0px #00000014;
+  --shadow-2: 2px 2px 12px 0px #4032851f;
+
+  /* Typography tokens */
+  --text-headline1: 66px;
+  --text-headline1--line-height: 125%;
+  --text-headline1--letter-spacing: -0.02em;
+  --text-headline1--font-weight: 500;
+  --text-headline2: 36px;
+  --text-headline2--line-height: 125%;
+  --text-headline2--letter-spacing: -0.02em;
+  --text-headline2--font-weight: 500;
+  --text-headline3: 24px;
+  --text-headline3--line-height: 125%;
+  --text-headline3--letter-spacing: -0.02em;
+  --text-headline3--font-weight: 500;
+  --text-body1: 20px;
+  --text-body1--line-height: 150%;
+  --text-body1--letter-spacing: 0;
+  --text-body1--font-weight: 400;
+  --text-body2: 16px;
+  --text-body2--line-height: 150%;
+  --text-body2--letter-spacing: 0;
+  --text-body2--font-weight: 400;
+  --text-body3: 14px;
+  --text-body3--line-height: 150%;
+  --text-body3--letter-spacing: 0;
+  --text-body3--font-weight: 400;
+  --text-body4: 12px;
+  --text-body4--line-height: 150%;
+  --text-body4--letter-spacing: 0;
+  --text-body4--font-weight: 400;
 }
 
 :root {
@@ -109,6 +169,7 @@
   --color-black: #000000;
   --color-white: #ffffff;
   --color-green: #2fac8e;
+  --color-purple: #9B2FAC;
 
   /* Gradient */
   --gradient-linear-1: linear-gradient(109.54deg, #95beff 18.21%, #0040e6 95.27%);
@@ -168,95 +229,17 @@
 }
 
 @layer utilities {
-  .text-headline1 {
-    font-size: 66px;
-    line-height: 125%;
-    letter-spacing: -0.02em;
-    font-weight: 500;
+  /** Toast ring countdown (counterclockwise from same start point). Sync 4s with DEFAULT_DURATION in base/toast/index.ts */
+  @keyframes app-toast-progress {
+    from {
+      stroke-dashoffset: 0;
+    }
+    to {
+      stroke-dashoffset: -100;
+    }
   }
 
-  .text-headline2 {
-    font-size: 36px;
-    line-height: 125%;
-    letter-spacing: -0.02em;
-    font-weight: 500;
+  .animate-app-toast-progress {
+    animation: app-toast-progress 4s linear forwards;
   }
-
-  .text-headline3 {
-    font-size: 24px;
-    line-height: 125%;
-    letter-spacing: -0.02em;
-    font-weight: 500;
-  }
-
-  .text-body1 {
-    font-size: 20px;
-    line-height: 150%;
-    letter-spacing: 0;
-    font-weight: 400;
-  }
-
-  .text-body2 {
-    font-size: 16px;
-    line-height: 150%;
-    letter-spacing: 0;
-    font-weight: 400;
-  }
-
-  .text-body3 {
-    font-size: 14px;
-    line-height: 150%;
-    letter-spacing: 0;
-    font-weight: 400;
-  }
-
-  .text-body4 {
-    font-size: 12px;
-    line-height: 150%;
-    letter-spacing: 0;
-    font-weight: 400;
-  }
-
-  .bg-blue-100 { background-color: var(--color-blue-100); }
-  .bg-blue-200 { background-color: var(--color-blue-200); }
-  .bg-blue-300 { background-color: var(--color-blue-300); }
-  .bg-blue-400 { background-color: var(--color-blue-400); }
-  .bg-blue-500 { background-color: var(--color-blue-500); }
-  .bg-blue-600 { background-color: var(--color-blue-600); }
-  .bg-blue-700 { background-color: var(--color-blue-700); }
-  .bg-blue-800 { background-color: var(--color-blue-800); }
-  .bg-blue-900 { background-color: var(--color-blue-900); }
-
-  .bg-gray-100 { background-color: var(--color-gray-100); }
-  .bg-gray-200 { background-color: var(--color-gray-200); }
-  .bg-gray-300 { background-color: var(--color-gray-300); }
-  .bg-gray-400 { background-color: var(--color-gray-400); }
-  .bg-gray-500 { background-color: var(--color-gray-500); }
-  .bg-gray-600 { background-color: var(--color-gray-600); }
-  .bg-gray-700 { background-color: var(--color-gray-700); }
-  .bg-gray-800 { background-color: var(--color-gray-800); }
-  .bg-gray-900 { background-color: var(--color-gray-900); }
-
-  .border-gray-100 { border-color: var(--color-gray-100); }
-  .border-gray-200 { border-color: var(--color-gray-200); }
-  .border-gray-300 { border-color: var(--color-gray-300); }
-  .border-gray-400 { border-color: var(--color-gray-400); }
-  .border-gray-500 { border-color: var(--color-gray-500); }
-  .border-gray-600 { border-color: var(--color-gray-600); }
-  .border-gray-700 { border-color: var(--color-gray-700); }
-  .border-gray-800 { border-color: var(--color-gray-800); }
-  .border-gray-900 { border-color: var(--color-gray-900); }
-
-  .bg-orange-100 { background-color: var(--color-orange-100); }
-  .bg-orange-500 { background-color: var(--color-orange-500); }
-
-  .bg-black { background-color: var(--color-black); }
-  .bg-white { background-color: var(--color-white); }
-  .bg-green { background-color: var(--color-green); }
-
-  .bg-gradient-linear-1 { background: var(--gradient-linear-1); }
-  .bg-gradient-linear-2 { background: var(--gradient-linear-2); }
-
-  .shadow-1 { box-shadow: var(--shadow-1); }
-  .shadow-2 { box-shadow: var(--shadow-2); }
 }
