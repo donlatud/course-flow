@@ -238,7 +238,7 @@
       stroke-dashoffset: -100;
     }
   }
-
+  .animate-app-toast-progress { animation: app-toast-progress 4s linear forwards; }
   .bg-orange-100 { background-color: var(--color-orange-100); }
   .bg-orange-500 { background-color: var(--color-orange-500); }
 
@@ -254,3 +254,4 @@
   .shadow-1 { box-shadow: var(--shadow-1); }
   .shadow-2 { box-shadow: var(--shadow-2); }
 }
+
