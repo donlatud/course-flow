@@ -13,11 +13,14 @@ const menuButtonClass =
   "group px-6 py-4 flex w-full items-center gap-4 text-left text-body2 leading-none font-normal text-gray-800 transition-colors hover:bg-gray-200 cursor-pointer";
 
 const isActive = (path: string) => route.path === path;
+
+const isCourseSection = () =>
+  route.path === "/admin/course" || route.path.startsWith("/admin/course/");
 </script>
 
 <template>
   <aside
-    class="flex h-full min-h-0 w-[240px] shrink-0 flex-col border-r border-gray-200 bg-white"
+    class="fixed inset-y-0 left-0 z-40 flex h-screen w-[240px] flex-col overflow-y-auto border-r border-gray-200 bg-white"
   >
     <div class="flex flex-col justify-center items-center gap-6 px-6 pt-10 pb-6">
       <svg
@@ -190,7 +193,7 @@ const isActive = (path: string) => route.path === path;
       <div class="text-body2">
         <RouterLink
           to="/admin/course"
-          :class="[menuButtonClass, isActive('/admin/course') ? 'bg-gray-200' : '']"
+          :class="[menuButtonClass, isCourseSection() ? 'bg-gray-200' : '']"
         >
           <BookOpen
             :size="24"
