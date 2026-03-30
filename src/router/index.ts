@@ -1,12 +1,24 @@
 import { createRouter, createWebHistory } from 'vue-router'
 
 import HomeView from '@/views/HomeView.vue'
+import CoursePage from '@/views/admin/CoursePage.vue'
+import CourseCreatePage from '@/views/admin/CourseCreatePage.vue'
 import RegisterView from '@/views/RegisterView.vue'
 import LoginView from '@/views/LoginView.vue'
 const routes = [
   {
     path: '/',
-    component: HomeView
+    component: HomeView,
+  },
+  {
+    path: '/admin/course',
+    name: 'admin-course',
+    component: CoursePage,
+  },
+  {
+    path: '/admin/course/create',
+    name: 'admin-course-create',
+    component: CourseCreatePage,
   },
   {
     path: '/courses',
@@ -21,11 +33,9 @@ const routes = [
   { path: "/login", component: LoginView },
 ]
 
-
-
 const router = createRouter({
   history: createWebHistory(),
-  routes
+  routes,
 })
 
 export default router
