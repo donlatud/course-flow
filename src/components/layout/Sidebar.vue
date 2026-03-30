@@ -12,18 +12,14 @@ const route = useRoute();
 const menuButtonClass =
   "group px-6 py-4 flex w-full items-center gap-4 text-left text-body2 leading-none font-normal text-gray-800 transition-colors hover:bg-gray-200 cursor-pointer";
 
-  const textlist =
-  "group px-6 py-4 flex w-full items-center gap-4 text-left text-body2 leading-none font-normal text-gray-800 transition-colors hover:bg-gray-200 cursor-pointer";
-
-
 const isActive = (path: string) => route.path === path;
 </script>
 
 <template>
-  <aside class="flex h-screen w-[240px] flex-col bg-white border-r-[1px]">
-    <div
-      class="flex flex-col justify-center items-center gap-6 px-6 pt-10 pb-6"
-    >
+  <aside
+    class="flex h-full min-h-0 w-[240px] shrink-0 flex-col border-r border-gray-200 bg-white"
+  >
+    <div class="flex flex-col justify-center items-center gap-6 px-6 pt-10 pb-6">
       <svg
         class="w-fit"
         xmlns="http://www.w3.org/2000/svg"
@@ -190,7 +186,7 @@ const isActive = (path: string) => route.path === path;
       </p>
     </div>
 
-    <nav class="">
+    <nav>
       <div class="text-body2">
         <RouterLink
           to="/admin/course"
@@ -213,7 +209,7 @@ const isActive = (path: string) => route.path === path;
             class="text-blue-300 transition-colors group-hover:text-blue-500"
             stroke-width="1.6"
           />
-          <span class="textlist">Assignment</span>
+          <span class="text-body2 text-gray-800">Assignment</span>
         </RouterLink>
 
         <RouterLink
@@ -225,11 +221,11 @@ const isActive = (path: string) => route.path === path;
             class="text-blue-300 transition-colors group-hover:text-blue-500"
             stroke-width="1.6"
           />
-          <span>Promo code</span>
+          <span class="text-body2 text-gray-800">Promo code</span>
         </RouterLink>
       </div>
     </nav>
-    <div class="h-full flex items-center">
+    <div class="flex-grow flex items-end pb-6">
       <button type="button" :class="menuButtonClass">
         <LogOut
           :size="24"
