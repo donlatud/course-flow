@@ -1,10 +1,29 @@
 <script setup lang="ts">
-import { RouterView } from 'vue-router'
+import { computed } from "vue";
+import { RouterView, useRoute } from "vue-router";
+import Sidebar from "@/components/layout/Sidebar.vue";
+import { Toaster } from "@/components/base/toast";
 
+const route = useRoute();
+const isAdmin = computed(() => route.path.startsWith("/admin"));
 </script>
 
 <template>
+  <!-- Admin layout: centered container with sticky sidebar -->
+  <div v-if="isAdmin" class="min-h-screen bg-white">
+    <div class="mx-auto flex max-w-[1920px]">
+      <Sidebar />
+      <main class="flex-1 min-h-screen">
+        <RouterView />
+      </main>
+    </div>
+  </div>
 
+  <!-- Public layout: no sidebar -->
+  <div v-else>
+    <RouterView />
+  </div>
 
-  <RouterView />
+  <Toaster />
 </template>
+
