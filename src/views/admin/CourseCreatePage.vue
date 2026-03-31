@@ -1,15 +1,24 @@
 <script setup lang="ts">
-import { ref } from "vue";
-import { useRouter } from "vue-router";
+import { computed, ref, watch } from "vue";
+import { onBeforeRouteLeave, useRouter } from "vue-router";
+import type { NavigationGuardNext } from "vue-router";
 import CustomInput from "@/components/base/input/CustomInput.vue";
+import NumberInput from "@/components/base/input/NumberInput.vue";
 import AttachFileInput from "@/components/base/input/AttachFileInput.vue";
 import MediaInput from "@/components/base/input/MediaInput.vue";
 import PromoCard from "@/components/admin/PromoCard.vue";
 import LessonTable from "@/components/admin/LessonTable.vue";
-import { lessonMock as lessons } from "@/views/admin/lesson.mock";
+import Modal from "@/components/base/modal/Modal.vue";
 import { Textarea } from "@/components/ui/textarea";
+import { appToast } from "@/components/base/toast";
 import { cn } from "@/lib/utils";
 import { ArrowLeft } from "lucide-vue-next";
+import {
+  courseDraftState,
+  isCourseDraftEmpty,
+  resetCourseDraft,
+  toLessonTableItems,
+} from "@/views/admin/course-create.state";
 
 const textareaBaseClass = cn(
   "w-full resize-y rounded-[10px] border border-gray-300 bg-white px-4 py-3",
@@ -18,40 +27,87 @@ const textareaBaseClass = cn(
   "focus-visible:border-orange-500 focus-visible:ring-2 focus-visible:ring-orange-500/20"
 );
 
-
 const router = useRouter();
+const courseNameError = ref(false);
+const showCancelModal = ref(false);
+let guardNext: NavigationGuardNext | null = null;
+const courseCreateFlowRoutes = new Set([
+  "admin-course-create",
+  "admin-course-create-lesson",
+]);
 
-const courseName = ref("");
-const coursePrice = ref("");
-const totalLearningTime = ref("");
-const courseSummary = ref("");
-const courseDetail = ref("");
-const coverImageFile = ref<File | null>(null);
-const trailerVideoFile = ref<File | null>(null);
-const attachmentFile = ref<File | null>(null);
+const lessons = computed(() => toLessonTableItems(courseDraftState.lessons));
 
-const promoEnabled = ref(false);
-const promoCode = ref("");
-const promoDiscount = ref("");
-const promoValidFrom = ref("");
-const promoValidUntil = ref("");
+watch(
+  () => courseDraftState.courseName,
+  (value) => {
+    if (value.trim()) {
+      courseNameError.value = false;
+    }
+  },
+);
 
-function goToCourseList() {
-  router.push({ name: "admin-course" });
+onBeforeRouteLeave((to, _from, next) => {
+  const targetRouteName = typeof to.name === "string" ? to.name : "";
+  if (courseCreateFlowRoutes.has(targetRouteName)) {
+    next();
+    return;
+  }
+
+  if (isCourseDraftEmpty()) {
+    next();
+    return;
+  }
+
+  guardNext = next;
+  showCancelModal.value = true;
+});
+
+function confirmCancel() {
+  showCancelModal.value = false;
+  resetCourseDraft();
+  guardNext?.();
+  guardNext = null;
+}
+
+function keepEditing() {
+  showCancelModal.value = false;
+  guardNext?.(false);
+  guardNext = null;
+}
+
+function scrollToError(selector: string) {
+  const target = document.querySelector(selector);
+  if (!target) return;
+  target.scrollIntoView({ behavior: "smooth", block: "center" });
+}
+
+function goToAddLesson() {
+  if (!courseDraftState.courseName.trim()) {
+    courseNameError.value = true;
+    scrollToError("#course-name-field");
+    appToast.error(
+      "Course name is required",
+      "Please enter the course name before adding a lesson.",
+    );
+    return;
+  }
+
+  router.push({ name: "admin-course-create-lesson" });
 }
 </script>
 
 <template>
-  <section class="flex min-h-screen flex-col">
+  <section class="flex min-h-screen flex-col bg-gray-100">
     <div
-      class="flex h-[92px] shrink-0 items-center justify-between gap-6 border-b border-gray-200 bg-white px-8"
+      class="mx-auto flex w-full max-w-[1920px] items-center justify-between gap-6 border-b border-gray-200 bg-white px-8 h-[92px]"
     >
           <div class="flex min-w-0 flex-1 items-center gap-4">
             <button
               type="button"
               class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-gray-700 transition-colors hover:bg-gray-100"
               aria-label="Back to course list"
-              @click="goToCourseList"
+              @click="router.push({ name: 'admin-course' })"
             >
               <ArrowLeft :size="22" stroke-width="2" />
             </button>
@@ -67,7 +123,7 @@ function goToCourseList() {
             <button
               type="button"
               class="h-15 w-[119px] min-w-[100px] rounded-xl border-2 border-orange-500 bg-white px-6 text-[16px] font-semibold text-orange-500 transition-colors hover:bg-orange-50 active:bg-orange-100"
-              @click="goToCourseList"
+              @click="router.push({ name: 'admin-course' })"
             >
               Cancel
             </button>
@@ -80,36 +136,46 @@ function goToCourseList() {
           </div>
         </div>
         <div class="min-h-0 flex-1 overflow-y-auto px-10 pt-10">
-          <div class="flex h-fit w-full flex-1 rounded-2xl bg-white">
+          <div class="mx-auto flex h-fit w-full max-w-[1920px] flex-1 rounded-2xl bg-white">
             <div
               class="mx-auto flex h-fit w-full flex-col gap-10 px-8 pb-10 pt-10 sm:px-12 lg:px-25"
             >
-              <CustomInput
-                v-model="courseName"
-                label="Course name"
-                placeholder="e.g. Service Design Essentials"
-              />
+              <div id="course-name-field">
+                <CustomInput
+                  v-model="courseDraftState.courseName"
+                  label="Course name"
+                  placeholder="e.g. Service Design Essentials"
+                  :error="courseNameError"
+                  error-message="Please enter the course name before adding a lesson."
+                />
+              </div>
               <div
                 class="flex w-full flex-col gap-6 md:flex-row md:items-start md:gap-10"
               >
-                <CustomInput
-                  v-model="coursePrice"
+                <NumberInput
+                  v-model="courseDraftState.coursePrice"
                   class="min-w-0 flex-1"
-                  label="Price"
+                  label="Price *"
                   placeholder="0.00"
+                  supporting-text="Please enter numbers only"
+                  :step="1"
+                  :min="0"
                 />
-                <CustomInput
-                  v-model="totalLearningTime"
+                <NumberInput
+                  v-model="courseDraftState.totalLearningTime"
                   class="min-w-0 flex-1"
-                  label="Total learning time"
+                  label="Total learning time *"
                   placeholder="e.g. 6"
+                  supporting-text="Total learning time in hours"
+                  :step="1"
+                  :min="0"
                 />
               </div>
               <div class="flex flex-col gap-4">
                 <div class="flex items-center gap-3">
                   <input
                     id="promo-checkbox"
-                    v-model="promoEnabled"
+                    v-model="courseDraftState.promoEnabled"
                     type="checkbox"
                     class="h-5 w-5 shrink-0 rounded border-gray-300 text-blue-600 focus:ring-2 focus:ring-blue-500/30"
                   />
@@ -122,11 +188,11 @@ function goToCourseList() {
                 </div>
 
                 <PromoCard
-                  v-if="promoEnabled"
-                  v-model:promo-code="promoCode"
-                  v-model:discount="promoDiscount"
-                  v-model:valid-from="promoValidFrom"
-                  v-model:valid-until="promoValidUntil"
+                  v-if="courseDraftState.promoEnabled"
+                  v-model:promo-code="courseDraftState.promoCode"
+                  v-model:discount="courseDraftState.promoDiscount"
+                  v-model:valid-from="courseDraftState.promoValidFrom"
+                  v-model:valid-until="courseDraftState.promoValidUntil"
                 />
               </div>
               <div class="flex w-full flex-col gap-1">
@@ -139,7 +205,7 @@ function goToCourseList() {
                 </label>
                 <Textarea
                   id="course-summary"
-                  v-model="courseSummary"
+                  v-model="courseDraftState.courseSummary"
                   required
                   placeholder="Place Holder"
                   :class="cn(textareaBaseClass, 'min-h-[100px]')"
@@ -157,7 +223,7 @@ function goToCourseList() {
                 </label>
                 <Textarea
                   id="course-detail"
-                  v-model="courseDetail"
+                  v-model="courseDraftState.courseDetail"
                   required
                   placeholder="Place Holder"
                   :class="cn(textareaBaseClass, 'min-h-[220px]')"
@@ -165,7 +231,7 @@ function goToCourseList() {
                 />
               </div>
               <MediaInput
-                v-model="coverImageFile"
+                v-model="courseDraftState.coverImageFile"
                 title="Cover image *"
                 subtitle="Supported file types: .jpg, .png, .jpeg. Max file size: 5 MB"
                 uploadtext="Upload Image"
@@ -173,7 +239,7 @@ function goToCourseList() {
               />
 
               <MediaInput
-                v-model="trailerVideoFile"
+                v-model="courseDraftState.trailerVideoFile"
                 title="Video trailer *"
                 subtitle="Supported file types: .mp4, .mov, .avi. Max file size: 20 MB"
                 uploadtext="Upload Video"
@@ -182,7 +248,7 @@ function goToCourseList() {
               />
 
               <AttachFileInput
-                v-model="attachmentFile"
+                v-model="courseDraftState.attachmentFile"
                 title="Attach File (Optional)"
                 subtitle="Supported file types: .pdf, .doc, .docx. Max file size: 10 MB"
                 uploadtext="Upload file"
@@ -203,6 +269,7 @@ function goToCourseList() {
                 <button
                   type="button"
                   class="h-15 w-fit min-w-[120px] rounded-xl bg-blue-500 px-6 text-[16px] font-bold text-white transition-colors hover:bg-blue-400 active:bg-blue-700"
+                  @click="goToAddLesson"
                 >
                   + Add Lesson
                 </button>
@@ -213,4 +280,15 @@ function goToCourseList() {
           </div>
         </div>
   </section>
+
+  <Modal
+    v-model:open="showCancelModal"
+    title="Cancel Course Creation"
+    message="Are you sure you want to cancel? All information you have entered will be lost."
+    left-text="Keep editing"
+    right-text="Yes, cancel"
+    type="secondary"
+    @left-click="keepEditing"
+    @right-click="confirmCancel"
+  />
 </template>
