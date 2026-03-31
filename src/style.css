@@ -174,10 +174,11 @@
   /* Gradient */
   --gradient-linear-1: linear-gradient(109.54deg, #95beff 18.21%, #0040e6 95.27%);
   --gradient-linear-2: linear-gradient(270.94deg, #5697ff 7.78%, #2558dd 73.86%);
+}
 
-  /* Shadow */
-  --shadow-1: 4px 4px 24px 0px #00000014;
-  --shadow-2: 2px 2px 12px 0px #4032851f;
+@theme {
+  --color-shadow-1: 4px 4px 24px 0px #00000014;
+  --color-shadow-2: 2px 2px 12px 0px #4032851f;
 }
 
 .dark {

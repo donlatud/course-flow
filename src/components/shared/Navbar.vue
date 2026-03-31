@@ -1,6 +1,6 @@
 <template>
-  <nav class="bg-white text-white shadow-2">
-    <div class="max-w-8xl mx-auto px-4 md:px-[160px] py-4">
+  <nav class="bg-white relative z-50 shadow-2">
+    <div class="max-w-8xl mx-auto px-4 md:px-40 py-4">
       <div class="flex justify-between items-center h-16">
         <!-- Logo -->
         <router-link to="/" class="text-xl font-bold">
@@ -69,7 +69,7 @@
   </nav>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref } from "vue";
 import PrimaryButton from "../base/button/PrimaryButton.vue";
 import profileIcon from "@/assets/icon-profile.svg";
