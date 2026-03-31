@@ -1,5 +1,5 @@
 <template>
-  <section class="relative overflow-hidden px-4 py-16 flex flex-col gap-16 md:h-277.75 md:justify-center">
+  <section class="relative overflow-hidden px-4 py-16 flex flex-col gap-16 md:h-205.75 md:justify-center">
     <h2 class="text-headline3 md:text-headline2 font-medium text-center">
       Our Professional Instructors
     </h2>

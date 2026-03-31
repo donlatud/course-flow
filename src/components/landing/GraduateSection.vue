@@ -33,17 +33,17 @@ const instructors = [
 </script>
 
 <template>
-  <section class="h-179 relative overflow-hidden md:overflow-visible mb-10 ">
+  <section class="h-179 relative overflow-hidden md:overflow-visible py-16">
     <!-- Background Vectors -->
     <img 
       :src="vectorCircleDarkBlue" 
       alt="background circle" 
-      class="absolute top-3 left-87.5 w-8.5 h-8.5 z-0 rotate-90 md:w-18.25 md:h-18.25 md:-top-25 md:left-342 2xl:left-479"
+      class="absolute top-3 left-87.5 w-8.5 h-8.5 z-0 rotate-90 md:w-18.25 md:h-18.25 md:top-0 md:left-342 2xl:left-479"
     />
     <img 
       :src="vectorCircleLightBlue" 
       alt="background circle light" 
-      class="absolute top-13.25 left-83 w-4 h-4 z-0 md:w-7 md:h-7 md:-top-6 md:left-334 2xl:left-470"
+      class="absolute top-13.25 left-83 w-4 h-4 z-0 md:w-7 md:h-7 md:top-20.75 md:left-334 2xl:left-470"
     />
     <img 
       :src="vectorCrossGreen" 
