@@ -24,11 +24,13 @@ const lessonNameError = ref(false);
 const subLessons = ref<DraftSubLesson[]>([createEmptySubLesson()]);
 /** IDs of sub-lessons with empty name after failed validation */
 const subLessonNameErrorIds = ref<Set<number>>(new Set());
+const isSubmitting = ref(false);
 
 function subLessonNameHasError(id: number) {
   return subLessonNameErrorIds.value.has(id);
 }
 const showCancelModal = ref(false);
+const showCreateModal = ref(false);
 let guardNext: NavigationGuardNext | null = null;
 
 const courseTitle = computed(() =>
@@ -64,7 +66,7 @@ function isLessonFormEmpty() {
 }
 
 onBeforeRouteLeave((_to, _from, next) => {
-  if (isLessonFormEmpty()) {
+  if (isLessonFormEmpty() || isSubmitting.value) {
     next();
     return;
   }
@@ -156,9 +158,15 @@ function validateLessonForm() {
   return true;
 }
 
-function createLesson() {
+function requestCreateLesson() {
   if (!validateLessonForm()) return;
+  showCreateModal.value = true;
+}
 
+function confirmCreateLesson() {
+  showCreateModal.value = false;
+
+  isSubmitting.value = true;
   addDraftLesson({
     name: lessonName.value.trim(),
     subLessons: subLessons.value.map((item) => ({
@@ -207,7 +215,7 @@ function createLesson() {
         <button
           type="button"
           class="h-15 min-w-[100px] rounded-xl bg-blue-500 px-6 text-[16px] font-bold text-white transition-colors hover:bg-blue-400 active:bg-blue-700"
-          @click="createLesson"
+          @click="requestCreateLesson"
         >
           Create
         </button>
@@ -380,5 +388,16 @@ function createLesson() {
     type="secondary"
     @left-click="keepEditing"
     @right-click="confirmCancel"
+  />
+
+  <Modal
+    v-model:open="showCreateModal"
+    title="Confirm Lesson Creation"
+    message="Are you sure you want to create this lesson? The lesson will be added to the course."
+    left-text="No, keep editing"
+    right-text="Yes, create"
+    type="secondary"
+    @left-click="showCreateModal = false"
+    @right-click="confirmCreateLesson"
   />
 </template>
