@@ -1,12 +1,70 @@
 <script setup lang="ts">
+import { onMounted, ref } from "vue";
+import axios from "axios";
 import { Search } from "lucide-vue-next";
-import { courseMock as courses } from "@/views/admin/course.mock";
 import Table from "@/components/admin/CourseTable.vue";
+import type { CourseItem } from "@/views/admin/course.mock";
 import { useRouter } from "vue-router";
+
 const router = useRouter();
+
+const courses = ref<CourseItem[]>([]);
+const isLoading = ref(false);
+const errorMessage = ref<string | null>(null);
+const searchText = ref("");
+
+function mapApiToCourseItem(api: any): CourseItem {
+  return {
+    id: api.id,
+    name: api.title,
+    lessons: `${api.lessonCount ?? 0} Lessons`,
+    price:
+      api.price != null
+        ? Number(api.price).toLocaleString("en-US", {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+          })
+        : "0.00",
+    createdAt: api.createdAt,
+    updatedAt: api.updatedAt,
+    image:
+      api.coverImageUrl ??
+      "https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=300&q=80",
+  };
+}
+
+async function fetchCourses() {
+  try {
+    isLoading.value = true;
+    errorMessage.value = null;
+
+    const response = await axios.get(
+      "http://localhost:8080/api/admin/courses",
+      {
+        headers: {
+          Authorization:
+            "Bearer 22222222-2222-2222-2222-222222222222",
+        },
+      },
+    );
+
+    courses.value = (response.data as any[]).map((item) =>
+      mapApiToCourseItem(item),
+    );
+  } catch (error: any) {
+    console.error(error);
+    errorMessage.value =
+      error?.response?.data?.message ?? "Failed to load courses.";
+  } finally {
+    isLoading.value = false;
+  }
+}
+
 function goToCourseCreate() {
   router.push({ name: "admin-course-create" });
 }
+
+onMounted(fetchCourses);
 </script>
 
 <template>
@@ -25,6 +83,7 @@ function goToCourseCreate() {
           >
             <Search :size="18" class="text-gray-500" />
             <input
+              v-model="searchText"
               type="text"
               placeholder="Search..."
               class="w-full border-0 bg-transparent text-body3 text-gray-800 placeholder:text-gray-500 focus:outline-none"
@@ -42,7 +101,28 @@ function goToCourseCreate() {
       </div>
       <div class="min-h-0 flex-1 overflow-y-auto px-10 pt-12">
         <div class="mx-auto w-full">
-          <Table :courses="courses" />
+          <div
+            v-if="isLoading"
+            class="py-10 text-center text-body3 text-gray-500"
+          >
+            Loading courses...
+          </div>
+          <div
+            v-else-if="errorMessage"
+            class="py-10 text-center text-body3 text-red-500"
+          >
+            {{ errorMessage }}
+          </div>
+          <Table
+            v-else
+            :courses="
+              courses.filter((course) =>
+                course.name
+                  .toLowerCase()
+                  .includes(searchText.toLowerCase()),
+              )
+            "
+          />
         </div>
       </div>
     </section>

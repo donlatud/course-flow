@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
+import axios from "axios";
 import { onBeforeRouteLeave, useRouter } from "vue-router";
 import type { NavigationGuardNext } from "vue-router";
 import CustomInput from "@/components/base/input/CustomInput.vue";
@@ -30,6 +31,7 @@ const textareaBaseClass = cn(
 const router = useRouter();
 const courseNameError = ref(false);
 const showCancelModal = ref(false);
+const isSubmitting = ref(false);
 let guardNext: NavigationGuardNext | null = null;
 const courseCreateFlowRoutes = new Set([
   "admin-course-create",
@@ -95,6 +97,110 @@ function goToAddLesson() {
 
   router.push({ name: "admin-course-create-lesson" });
 }
+
+function validateCreatePayload() {
+  if (!courseDraftState.courseName.trim()) {
+    courseNameError.value = true;
+    scrollToError("#course-name-field");
+    appToast.error("Course name is required", "Please enter the course name.");
+    return false;
+  }
+
+  if (!courseDraftState.totalLearningTime.trim()) {
+    appToast.error(
+      "Total learning time is required",
+      "Please enter total learning time in hours.",
+    );
+    return false;
+  }
+
+  if (!courseDraftState.courseSummary.trim()) {
+    appToast.error(
+      "Course summary is required",
+      "Please enter a short summary of the course.",
+    );
+    return false;
+  }
+
+  if (!courseDraftState.courseDetail.trim()) {
+    appToast.error(
+      "Course detail is required",
+      "Please enter the full course detail.",
+    );
+    return false;
+  }
+
+  return true;
+}
+
+async function handleCreateCourse() {
+  if (isSubmitting.value) return;
+  if (!validateCreatePayload()) return;
+
+  try {
+    isSubmitting.value = true;
+
+    const priceNumber = courseDraftState.coursePrice
+      ? Number(courseDraftState.coursePrice)
+      : 0;
+    const totalLearningTimeNumber = Number(
+      courseDraftState.totalLearningTime || "0",
+    );
+
+    const promoCode =
+      courseDraftState.promoEnabled && courseDraftState.promoCode.trim()
+        ? {
+            code: courseDraftState.promoCode.trim(),
+            discountType: "PERCENTAGE",
+            discountValue: courseDraftState.promoDiscount
+              ? Number(courseDraftState.promoDiscount)
+              : 0,
+            validFrom: courseDraftState.promoValidFrom || null,
+            validUntil: courseDraftState.promoValidUntil || null,
+          }
+        : null;
+
+    const modules = courseDraftState.lessons.map((lesson) => ({
+      title: lesson.name.trim(),
+      subLessons: lesson.subLessons.map((sub) => ({
+        title: sub.name.trim(),
+        fileType: sub.fileType,
+        detail: sub.detail.trim(),
+      })),
+    }));
+
+    const payload = {
+      title: courseDraftState.courseName.trim(),
+      description: courseDraftState.courseSummary.trim(),
+      detail: courseDraftState.courseDetail.trim(),
+      price: priceNumber,
+      totalLearningTime: totalLearningTimeNumber,
+      promoCode,
+      modules,
+    };
+
+    await axios.post("http://localhost:8080/api/admin/courses", payload, {
+      headers: {
+        Authorization:
+          "Bearer 22222222-2222-2222-2222-222222222222",
+      },
+    });
+
+    appToast.success(
+      "Course created",
+      "The course has been created successfully.",
+    );
+    resetCourseDraft();
+    router.push({ name: "admin-course" });
+  } catch (error: any) {
+    const message =
+      error?.response?.data?.message ??
+      "Failed to create course. Please try again.";
+    appToast.error("Create course failed", message);
+  } finally {
+    isSubmitting.value = false;
+  }
+}
 </script>
 
 <template>
@@ -129,7 +235,9 @@ function goToAddLesson() {
             </button>
             <button
               type="button"
-              class="h-15 w-[95px] min-w-[100px] rounded-xl bg-blue-500 px-6 text-[16px] font-bold text-white transition-colors hover:bg-blue-400 active:bg-blue-700"
+              class="h-15 w-[95px] min-w-[100px] rounded-xl bg-blue-500 px-6 text-[16px] font-bold text-white transition-colors hover:bg-blue-400 active:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed"
+              :disabled="isSubmitting"
+              @click="handleCreateCourse"
             >
               Create
             </button>
