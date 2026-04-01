@@ -15,9 +15,8 @@ const BUCKET_FILE = "course_file";
  * course_image/{courseId}/lesson/{lessonId}/sublesson/{sublessonId}/...  ← sub-lesson IMAGE
  *
  * course_file/{courseId}/file/...                  ← course attachment
- * course_file/{courseId}/lesson/{lessonId}/sublesson/{sublessonId}/...   ← sub-lesson VIDEO
  *
- * Note: videos (trailer, sub-lesson VIDEO) are NOT uploaded to Storage.
+ * Note: videos (trailer, sub-lesson VIDEO) are uploaded to Cloudinary.
  */
 function buildPath(courseFolderId: string, ...segments: string[]): string {
   const safe = courseFolderId.trim();
@@ -68,7 +67,6 @@ export async function uploadAttachFile(
 /**
  * Sub-lesson media (IMAGE only):
  * IMAGE → course_image/{courseId}/lesson/{lessonId}/sublesson/{sublessonId}/
- * VIDEO → not uploaded to Storage (skip)
  */
 export async function uploadSubLessonImage(
   file: File,
