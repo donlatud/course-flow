@@ -18,6 +18,10 @@ const BUCKET_FILE = "course_file";
  *
  * Note: videos (trailer, sub-lesson VIDEO) are uploaded to Cloudinary.
  */
+function getFileExtension(file: File, fallback = "bin"): string {
+  return file.name.split(".").pop()?.toLowerCase() ?? fallback;
+}
+
 function buildPath(courseFolderId: string, ...segments: string[]): string {
   const safe = courseFolderId.trim();
   if (!safe) throw new Error("courseFolderId is required");
@@ -41,7 +45,7 @@ export async function uploadCoverImage(
   file: File,
   courseFolderId: string,
 ): Promise<string> {
-  const ext = file.name.split(".").pop() ?? "jpg";
+  const ext = getFileExtension(file, "jpg");
   const path = buildPath(
     courseFolderId,
     "cover_image",
@@ -55,7 +59,7 @@ export async function uploadAttachFile(
   file: File,
   courseFolderId: string,
 ): Promise<string> {
-  const ext = file.name.split(".").pop() ?? "bin";
+  const ext = getFileExtension(file);
   const path = buildPath(
     courseFolderId,
     "file",
@@ -74,7 +78,7 @@ export async function uploadSubLessonImage(
   subLessonId: number,
   courseFolderId: string,
 ): Promise<string> {
-  const ext = file.name.split(".").pop() ?? "jpg";
+  const ext = getFileExtension(file, "jpg");
   const path = buildPath(
     courseFolderId,
     "lesson",
