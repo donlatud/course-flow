@@ -1,5 +1,13 @@
 import { reactive, watch } from "vue";
 
+const PERSIST_DEBOUNCE_MS = 500;
+let persistTimer: ReturnType<typeof setTimeout> | null = null;
+
+function schedulePersist() {
+  if (persistTimer !== null) clearTimeout(persistTimer);
+  persistTimer = setTimeout(persistState, PERSIST_DEBOUNCE_MS);
+}
+
 const STORAGE_KEY = "courseDraftState";
 
 export interface DraftSubLesson {
@@ -286,7 +294,7 @@ watch(
     nextSubLessonId: courseDraftState.nextSubLessonId,
   }),
   () => {
-    persistState();
+    schedulePersist();
   },
   { deep: true },
 );

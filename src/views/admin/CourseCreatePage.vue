@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
-import axios from "axios";
 import { onBeforeRouteLeave, useRouter } from "vue-router";
 import type { NavigationGuardNext } from "vue-router";
 import CustomInput from "@/components/base/input/CustomInput.vue";
@@ -14,6 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { appToast } from "@/components/base/toast";
 import { cn } from "@/lib/utils";
 import { ArrowLeft } from "lucide-vue-next";
+import { api } from "@/lib/api";
 import {
   uploadCoverImage,
   uploadAttachFile,
@@ -182,21 +182,11 @@ function validateCreatePayload() {
 }
 
 async function validateCourseNameUnique(): Promise<boolean> {
-  const courseName = courseDraftState.courseName.trim().toLowerCase();
-  const { data } = await axios.get("http://localhost:8080/api/admin/courses", {
-    headers: {
-      Authorization: "Bearer 22222222-2222-2222-2222-222222222222",
-    },
+  const { data } = await api.get("/api/admin/courses/exists", {
+    params: { title: courseDraftState.courseName.trim() },
   });
 
-  const courses = Array.isArray(data) ? data : [];
-  const duplicated = courses.some(
-    (item: { title?: string }) =>
-      typeof item?.title === "string" &&
-      item.title.trim().toLowerCase() === courseName,
-  );
-
-  if (duplicated) {
+  if (data?.exists) {
     courseNameError.value = true;
     courseNameErrorMessage.value = "Course names must be unique.";
     scrollToError("#course-name-field");
@@ -312,12 +302,7 @@ async function handleCreateCourse() {
       modules,
     };
 
-    await axios.post("http://localhost:8080/api/admin/courses", payload, {
-      headers: {
-        Authorization:
-          "Bearer 22222222-2222-2222-2222-222222222222",
-      },
-    });
+    await api.post("/api/admin/courses", payload);
 
     appToast.success(
       "Course created",
