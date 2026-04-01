@@ -15,6 +15,11 @@ import { appToast } from "@/components/base/toast";
 import { cn } from "@/lib/utils";
 import { ArrowLeft } from "lucide-vue-next";
 import {
+  uploadCoverImage,
+  uploadAttachFile,
+  uploadSubLessonImage,
+} from "@/lib/supabase";
+import {
   courseDraftState,
   isCourseDraftEmpty,
   resetCourseDraft,
@@ -33,6 +38,7 @@ const courseNameError = ref(false);
 const showCancelModal = ref(false);
 const isSubmitting = ref(false);
 let guardNext: NavigationGuardNext | null = null;
+
 const courseCreateFlowRoutes = new Set([
   "admin-course-create",
   "admin-course-create-lesson",
@@ -140,6 +146,52 @@ async function handleCreateCourse() {
   try {
     isSubmitting.value = true;
 
+    const folderId = courseDraftState.courseStorageFolderId;
+
+    // Upload cover image if a new file is selected
+    let coverImageUrl: string | null = null;
+    if (courseDraftState.coverImageFile) {
+      coverImageUrl = await uploadCoverImage(
+        courseDraftState.coverImageFile,
+        folderId,
+      );
+    }
+
+    // Upload attachment file if selected
+    let attachmentUrl: string | null = null;
+    if (courseDraftState.attachmentFile) {
+      attachmentUrl = await uploadAttachFile(
+        courseDraftState.attachmentFile,
+        folderId,
+      );
+    }
+
+    // Upload each sub-lesson IMAGE only (VIDEO is not stored in Supabase Storage)
+    const modules = await Promise.all(
+      courseDraftState.lessons.map(async (lesson) => ({
+        title: lesson.name.trim(),
+        subLessons: await Promise.all(
+          lesson.subLessons.map(async (sub) => {
+            let mediaUrl: string | null = null;
+            if (sub.fileType === "IMAGE" && sub.videoFile) {
+              mediaUrl = await uploadSubLessonImage(
+                sub.videoFile,
+                lesson.id,
+                sub.id,
+                folderId,
+              );
+            }
+            return {
+              title: sub.name.trim(),
+              fileType: sub.fileType,
+              detail: sub.detail.trim(),
+              mediaUrl,
+            };
+          }),
+        ),
+      })),
+    );
+
     const priceNumber = courseDraftState.coursePrice
       ? Number(courseDraftState.coursePrice)
       : 0;
@@ -160,21 +212,14 @@ async function handleCreateCourse() {
           }
         : null;
 
-    const modules = courseDraftState.lessons.map((lesson) => ({
-      title: lesson.name.trim(),
-      subLessons: lesson.subLessons.map((sub) => ({
-        title: sub.name.trim(),
-        fileType: sub.fileType,
-        detail: sub.detail.trim(),
-      })),
-    }));
-
     const payload = {
       title: courseDraftState.courseName.trim(),
       description: courseDraftState.courseSummary.trim(),
       detail: courseDraftState.courseDetail.trim(),
       price: priceNumber,
       totalLearningTime: totalLearningTimeNumber,
+      coverImageUrl,
+      attachmentUrl,
       promoCode,
       modules,
     };
@@ -344,6 +389,7 @@ async function handleCreateCourse() {
                 subtitle="Supported file types: .jpg, .png, .jpeg. Max file size: 5 MB"
                 uploadtext="Upload Image"
                 class="w-[240px] h-[240px]"
+                accept="image/jpeg,image/png,image/jpg,.jpg,.jpeg,.png"
               />
 
               <MediaInput

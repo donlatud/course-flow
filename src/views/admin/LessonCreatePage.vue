@@ -26,6 +26,14 @@ const subLessons = ref<DraftSubLesson[]>([createEmptySubLesson()]);
 const subLessonNameErrorIds = ref<Set<number>>(new Set());
 const isSubmitting = ref(false);
 
+/** When user picks a file, store it for upload at submit time and clear any stale URL. */
+function handleMediaChange(subLesson: DraftSubLesson, file: File | null) {
+  subLesson.uploadedUrl = null;
+  if (!file) {
+    subLesson.videoFile = null;
+  }
+}
+
 function subLessonNameHasError(id: number) {
   return subLessonNameErrorIds.value.has(id);
 }
@@ -314,6 +322,7 @@ function confirmCreateLesson() {
                             ? 'video/mp4,video/quicktime,video/x-msvideo,.mp4,.mov,.avi'
                             : 'image/jpeg,image/png,image/jpg,.jpg,.jpeg,.png'
                         "
+                        @change="handleMediaChange(subLesson, $event)"
                       />
                       <div class="flex flex-col gap-1">
                         <label
