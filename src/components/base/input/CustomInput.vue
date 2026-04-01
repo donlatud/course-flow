@@ -9,7 +9,7 @@ import { Eye, EyeOff } from "lucide-vue-next"
 const props = defineProps<{
   defaultValue?: string | number
   modelValue?: string | number
-  class?: HTMLAttributes["class"] 
+  class?: HTMLAttributes["class"]
   placeholder?: string
   type?: string
   disabled?: boolean
@@ -17,6 +17,7 @@ const props = defineProps<{
   error?: boolean
   errorMessage?: string
   label?: string
+  submitted?: boolean
 }>()
 
 const emits = defineEmits<{
@@ -36,20 +37,47 @@ const inputType = computed(() => {
   return props.type ?? "text"
 })
 
+// Email validation
+const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+const isEmailInvalid = computed(() =>
+  props.type === "email" &&
+  props.submitted &&
+  typeof modelValue.value === "string" &&
+  modelValue.value.length > 0 &&
+  !emailRegex.test(modelValue.value)
+)
+
+// Password validation (min 8 characters)
+const isPasswordInvalid = computed(() =>
+  props.type === "password" &&
+  props.submitted &&
+  typeof modelValue.value === "string" &&
+  modelValue.value.length > 0 &&
+  modelValue.value.length < 8
+)
+
+const hasError = computed(() => props.error || isEmailInvalid.value || isPasswordInvalid.value)
+
+const computedErrorMessage = computed(() => {
+  if (isEmailInvalid.value) return "Please enter a valid email (example@mail.com)"
+  if (isPasswordInvalid.value) return "Password must be at least 8 characters"
+  return props.errorMessage ?? ""
+})
+
 const paddingRight = computed(() => {
-  if (isPassword.value || (props.error && !props.disabled)) return "pr-12"
+  if (isPassword.value || (hasError.value && !props.disabled)) return "pr-12"
   return ""
 })
 </script>
 
 <template>
   <div :class="cn('flex flex-col gap-1 w-full', props.class)">
-    
-    <label v-if="label" class="text-body3 font-medium text-gray-800">
+
+    <label v-if="label" class="text-body2 font-medium text-gray-800">
       {{ label }}
     </label>
 
-    <span v-if="disabled && disabledLabel" class="text-body3 text-gray-600">
+    <span v-if="disabled && disabledLabel" class="text-body2 text-gray-600">
       {{ disabledLabel }}
     </span>
 
@@ -59,7 +87,7 @@ const paddingRight = computed(() => {
         :type="inputType"
         :placeholder="placeholder ?? 'Place Holder'"
         :disabled="disabled"
-        :aria-invalid="error || undefined"
+        :aria-invalid="hasError || undefined"
         :class="cn(
           'h-12 w-full rounded-[10px] border bg-white px-4',
           'text-body2 text-gray-900 placeholder:text-gray-500',
@@ -67,7 +95,7 @@ const paddingRight = computed(() => {
           'transition-all duration-200',
           'border-gray-300',
           'focus-visible:border-orange-500 focus-visible:ring-2 focus-visible:ring-orange-500/20',
-          'aria-invalid:border-(--color-purple) aria-invalid:ring-2 aria-invalid:ring-(--color-purple)/20',
+          'aria-invalid:border-(--color-purple) aria-invalid:ring-2 aria-invalid:ring-purple/20',
           'disabled:bg-gray-200 disabled:border-gray-400 disabled:text-gray-600 disabled:cursor-not-allowed',
           paddingRight,
         )"
@@ -88,7 +116,7 @@ const paddingRight = computed(() => {
       </button>
 
       <span
-        v-if="error && !disabled && !isPassword"
+        v-if="hasError && !disabled && !isPassword"
         class="absolute right-4 top-1/2 -translate-y-1/2
                flex items-center justify-center
                w-6 h-6 rounded-full bg-(--color-purple)
@@ -98,8 +126,9 @@ const paddingRight = computed(() => {
       </span>
     </div>
 
-    <p v-if="error && errorMessage" class="text-body4 text-(--color-purple) mt-0.5">
-      {{ errorMessage }}
+    <p v-if="hasError && computedErrorMessage" class="text-body4 text-(--color-purple) mt-0.5">
+      {{ computedErrorMessage }}
     </p>
+
   </div>
 </template>

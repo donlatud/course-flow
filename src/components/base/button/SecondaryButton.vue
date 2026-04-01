@@ -26,7 +26,7 @@ const secondaryButtonClass = computed(() =>
     "shadow-1 bg-white border border-orange-500 text-orange-500 text-[16px] font-bold w-[149px] h-[60px] rounded-[12px] py-[18px] px-8",
     "enabled:transition-all enabled:duration-300 enabled:ease-in-out",
     "enabled:hover:border-orange-100 enabled:hover:bg-white enabled:hover:text-orange-100 enabled:active:bg-gray-100",
-    "disabled:bg-white disabled:border-gray-500 disabled:text-gray-500 disabled:cursor-not-allowed",
+    "disabled:bg-white disabled:border-gray-500 disabled:text-gray-500 disabled:cursor-not-allowed cursor-pointer",
     props.class,
     (attrs as Record<string, unknown>).class as HTMLAttributes["class"],
   ),
