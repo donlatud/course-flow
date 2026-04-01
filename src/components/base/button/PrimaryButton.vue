@@ -26,7 +26,7 @@ const primaryButtonClass = computed(() =>
     "shadow-1 bg-blue-500 text-white text-[16px] font-bold w-[126px] h-[60px] rounded-[12px] py-[18px] px-8",
     "enabled:transition-all enabled:duration-300 enabled:ease-in-out",
     "enabled:hover:bg-blue-400 enabled:active:bg-blue-700",
-    "disabled:bg-gray-400 disabled:cursor-not-allowed",
+    "disabled:bg-gray-400 disabled:cursor-not-allowed cursor-pointer",
     props.class,
     (attrs as Record<string, unknown>).class as HTMLAttributes["class"],
   ),
