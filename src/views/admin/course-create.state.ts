@@ -8,6 +8,7 @@ export interface DraftSubLesson {
   videoFile: File | null;
   fileType: "VIDEO" | "IMAGE";
   detail: string;
+  uploadedUrl: string | null;
 }
 
 export interface DraftLesson {
@@ -27,6 +28,7 @@ interface PersistedSubLesson {
   name: string;
   fileType: "VIDEO" | "IMAGE";
   detail: string;
+  uploadedUrl: string | null;
 }
 
 interface PersistedLesson {
@@ -36,6 +38,8 @@ interface PersistedLesson {
 }
 
 interface PersistedCourseDraft {
+  /** UUID folder segment under `courses/` in Supabase Storage for this draft */
+  courseStorageFolderId: string;
   courseName: string;
   coursePrice: string;
   totalLearningTime: string;
@@ -51,8 +55,13 @@ interface PersistedCourseDraft {
   nextSubLessonId: number;
 }
 
+function newCourseStorageFolderId(): string {
+  return crypto.randomUUID();
+}
+
 function createDefaultPersistedState(): PersistedCourseDraft {
   return {
+    courseStorageFolderId: newCourseStorageFolderId(),
     courseName: "",
     coursePrice: "",
     totalLearningTime: "",
@@ -85,6 +94,11 @@ function loadPersistedState(): PersistedCourseDraft {
       ...createDefaultPersistedState(),
       ...parsed,
       lessons: parsed.lessons ?? [],
+      courseStorageFolderId:
+        typeof parsed.courseStorageFolderId === "string" &&
+        parsed.courseStorageFolderId.length > 0
+          ? parsed.courseStorageFolderId
+          : newCourseStorageFolderId(),
     };
   } catch {
     return createDefaultPersistedState();
@@ -94,12 +108,14 @@ function loadPersistedState(): PersistedCourseDraft {
 const initial = loadPersistedState();
 
 export const courseDraftState = reactive({
+  courseStorageFolderId: initial.courseStorageFolderId,
   courseName: initial.courseName,
   coursePrice: initial.coursePrice,
   totalLearningTime: initial.totalLearningTime,
   courseSummary: initial.courseSummary,
   courseDetail: initial.courseDetail,
   coverImageFile: null as File | null,
+  coverImageUrl: null as string | null,
   trailerVideoFile: null as File | null,
   attachmentFile: null as File | null,
   promoEnabled: initial.promoEnabled,
@@ -116,6 +132,7 @@ export const courseDraftState = reactive({
       videoFile: null,
       fileType: sub.fileType,
       detail: sub.detail,
+      uploadedUrl: sub.uploadedUrl ?? null,
     })),
   })) as DraftLesson[],
   nextLessonId: initial.nextLessonId,
@@ -129,6 +146,7 @@ export function createEmptySubLesson(): DraftSubLesson {
     videoFile: null,
     fileType: "VIDEO" as const,
     detail: "",
+    uploadedUrl: null,
   };
   courseDraftState.nextSubLessonId += 1;
   return subLesson;
@@ -179,12 +197,14 @@ export function isCourseDraftEmpty(): boolean {
 }
 
 export function resetCourseDraft() {
+  courseDraftState.courseStorageFolderId = newCourseStorageFolderId();
   courseDraftState.courseName = "";
   courseDraftState.coursePrice = "";
   courseDraftState.totalLearningTime = "";
   courseDraftState.courseSummary = "";
   courseDraftState.courseDetail = "";
   courseDraftState.coverImageFile = null;
+  courseDraftState.coverImageUrl = null;
   courseDraftState.trailerVideoFile = null;
   courseDraftState.attachmentFile = null;
   courseDraftState.promoEnabled = false;
@@ -205,6 +225,7 @@ function persistState() {
   if (typeof window === "undefined") return;
 
   const snapshot: PersistedCourseDraft = {
+    courseStorageFolderId: courseDraftState.courseStorageFolderId,
     courseName: courseDraftState.courseName,
     coursePrice: courseDraftState.coursePrice,
     totalLearningTime: courseDraftState.totalLearningTime,
@@ -223,6 +244,7 @@ function persistState() {
         name: sub.name,
         fileType: sub.fileType,
         detail: sub.detail,
+        uploadedUrl: sub.uploadedUrl,
       })),
     })),
     nextLessonId: courseDraftState.nextLessonId,
@@ -238,6 +260,7 @@ function persistState() {
 
 watch(
   () => ({
+    courseStorageFolderId: courseDraftState.courseStorageFolderId,
     courseName: courseDraftState.courseName,
     coursePrice: courseDraftState.coursePrice,
     totalLearningTime: courseDraftState.totalLearningTime,
@@ -256,6 +279,7 @@ watch(
         name: sub.name,
         fileType: sub.fileType,
         detail: sub.detail,
+        uploadedUrl: sub.uploadedUrl,
       })),
     })),
     nextLessonId: courseDraftState.nextLessonId,
