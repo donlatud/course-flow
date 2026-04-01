@@ -21,9 +21,11 @@ const router = useRouter();
 
 const lessonName = ref("");
 const lessonNameError = ref(false);
+const lessonNameErrorMessage = ref("Please enter the lesson name.");
 const subLessons = ref<DraftSubLesson[]>([createEmptySubLesson()]);
 /** IDs of sub-lessons with empty name after failed validation */
 const subLessonNameErrorIds = ref<Set<number>>(new Set());
+const subLessonNameErrorMessageById = ref<Record<number, string>>({});
 const isSubmitting = ref(false);
 
 /** When user picks a file, store it for upload at submit time and clear any stale URL. */
@@ -37,6 +39,13 @@ function handleMediaChange(subLesson: DraftSubLesson, file: File | null) {
 function subLessonNameHasError(id: number) {
   return subLessonNameErrorIds.value.has(id);
 }
+
+function subLessonNameErrorMessage(id: number) {
+  return (
+    subLessonNameErrorMessageById.value[id] ??
+    "Please enter a name for this sub-lesson."
+  );
+}
 const showCancelModal = ref(false);
 const showCreateModal = ref(false);
 let guardNext: NavigationGuardNext | null = null;
@@ -48,6 +57,7 @@ const courseTitle = computed(() =>
 watch(lessonName, (value) => {
   if (value.trim()) {
     lessonNameError.value = false;
+    lessonNameErrorMessage.value = "Please enter the lesson name.";
   }
 });
 
@@ -55,13 +65,16 @@ watch(
   () => subLessons.value.map((s) => ({ id: s.id, name: s.name })),
   () => {
     const next = new Set(subLessonNameErrorIds.value);
+    const nextMessages = { ...subLessonNameErrorMessageById.value };
     for (const id of [...next]) {
       const sub = subLessons.value.find((s) => s.id === id);
       if (sub?.name.trim()) {
         next.delete(id);
+        delete nextMessages[id];
       }
     }
     subLessonNameErrorIds.value = next;
+    subLessonNameErrorMessageById.value = nextMessages;
   },
   { deep: true },
 );
@@ -87,6 +100,7 @@ function confirmCancel() {
   showCancelModal.value = false;
   lessonName.value = "";
   lessonNameError.value = false;
+  lessonNameErrorMessage.value = "Please enter the lesson name.";
   subLessonNameErrorIds.value = new Set();
   subLessons.value = [createEmptySubLesson()];
   guardNext?.();
@@ -109,6 +123,9 @@ function removeSubLesson(id: number) {
   const next = new Set(subLessonNameErrorIds.value);
   next.delete(id);
   subLessonNameErrorIds.value = next;
+  const nextMessages = { ...subLessonNameErrorMessageById.value };
+  delete nextMessages[id];
+  subLessonNameErrorMessageById.value = nextMessages;
 }
 
 function scrollToError(selector: string) {
@@ -137,9 +154,26 @@ function validateLessonForm() {
   if (!lessonName.value.trim()) {
     subLessonNameErrorIds.value = new Set();
     lessonNameError.value = true;
+    lessonNameErrorMessage.value = "Please enter the lesson name.";
     scrollToError("#lesson-name-field");
     void focusLessonNameInput();
     appToast.error("Lesson name is required", "Please enter the lesson name.");
+    return false;
+  }
+
+  const normalizedLessonName = lessonName.value.trim().toLowerCase();
+  const hasDuplicateLessonName = courseDraftState.lessons.some(
+    (lesson) => lesson.name.trim().toLowerCase() === normalizedLessonName,
+  );
+  if (hasDuplicateLessonName) {
+    lessonNameError.value = true;
+    lessonNameErrorMessage.value = "Lesson names must be unique within a course.";
+    scrollToError("#lesson-name-field");
+    void focusLessonNameInput();
+    appToast.error(
+      "Lesson name already exists",
+      "Please use a different lesson name.",
+    );
     return false;
   }
 
@@ -147,9 +181,15 @@ function validateLessonForm() {
     (item) => !item.name.trim(),
   );
   if (hasEmptySubLessonName) {
-    subLessonNameErrorIds.value = new Set(
-      subLessons.value.filter((s) => !s.name.trim()).map((s) => s.id),
-    );
+    const missingNameIds = subLessons.value
+      .filter((s) => !s.name.trim())
+      .map((s) => s.id);
+    subLessonNameErrorIds.value = new Set(missingNameIds);
+    const nextMessages: Record<number, string> = {};
+    for (const id of missingNameIds) {
+      nextMessages[id] = "Please enter a name for this sub-lesson.";
+    }
+    subLessonNameErrorMessageById.value = nextMessages;
     const firstInvalid = subLessons.value.find((item) => !item.name.trim());
     if (firstInvalid) {
       scrollToError(`#sub-lesson-name-${firstInvalid.id}`);
@@ -162,7 +202,32 @@ function validateLessonForm() {
     return false;
   }
 
+  const duplicateSubLessonName = (() => {
+    const seen = new Set<string>();
+    for (const item of subLessons.value) {
+      const normalized = item.name.trim().toLowerCase();
+      if (seen.has(normalized)) return item;
+      seen.add(normalized);
+    }
+    return null;
+  })();
+  if (duplicateSubLessonName) {
+    subLessonNameErrorIds.value = new Set([duplicateSubLessonName.id]);
+    subLessonNameErrorMessageById.value = {
+      [duplicateSubLessonName.id]:
+        "Sub-lesson names must be unique within this lesson.",
+    };
+    scrollToError(`#sub-lesson-name-${duplicateSubLessonName.id}`);
+    void focusSubLessonNameInput(duplicateSubLessonName.id);
+    appToast.error(
+      "Sub-lesson name already exists",
+      "Sub-lesson names must be unique within a lesson.",
+    );
+    return false;
+  }
+
   subLessonNameErrorIds.value = new Set();
+  subLessonNameErrorMessageById.value = {};
   return true;
 }
 
@@ -239,7 +304,7 @@ function confirmCreateLesson() {
               label="Lesson name"
               placeholder="Place Holder"
               :error="lessonNameError"
-              error-message="Please enter the lesson name."
+              :error-message="lessonNameErrorMessage"
             />
           </div>
 
@@ -274,7 +339,7 @@ function confirmCreateLesson() {
                           label="Sub-lesson name"
                           placeholder="Place Holder"
                           :error="subLessonNameHasError(subLesson.id)"
-                          error-message="Please enter a name for this sub-lesson."
+                          :error-message="subLessonNameErrorMessage(subLesson.id)"
                         />
                       </div>
 

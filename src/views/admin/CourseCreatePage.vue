@@ -19,6 +19,7 @@ import {
   uploadAttachFile,
   uploadSubLessonImage,
 } from "@/lib/supabase";
+import { uploadVideoToCloudinary } from "@/lib/cloudinary";
 import {
   courseDraftState,
   isCourseDraftEmpty,
@@ -35,6 +36,9 @@ const textareaBaseClass = cn(
 
 const router = useRouter();
 const courseNameError = ref(false);
+const courseNameErrorMessage = ref(
+  "Please enter the course name before adding a lesson.",
+);
 const showCancelModal = ref(false);
 const isSubmitting = ref(false);
 let guardNext: NavigationGuardNext | null = null;
@@ -51,6 +55,8 @@ watch(
   (value) => {
     if (value.trim()) {
       courseNameError.value = false;
+      courseNameErrorMessage.value =
+        "Please enter the course name before adding a lesson.";
     }
   },
 );
@@ -93,6 +99,8 @@ function scrollToError(selector: string) {
 function goToAddLesson() {
   if (!courseDraftState.courseName.trim()) {
     courseNameError.value = true;
+    courseNameErrorMessage.value =
+      "Please enter the course name before adding a lesson.";
     scrollToError("#course-name-field");
     appToast.error(
       "Course name is required",
@@ -107,6 +115,7 @@ function goToAddLesson() {
 function validateCreatePayload() {
   if (!courseDraftState.courseName.trim()) {
     courseNameError.value = true;
+    courseNameErrorMessage.value = "Please enter the course name.";
     scrollToError("#course-name-field");
     appToast.error("Course name is required", "Please enter the course name.");
     return false;
@@ -136,6 +145,67 @@ function validateCreatePayload() {
     return false;
   }
 
+  const duplicateLesson = (() => {
+    const seen = new Set<string>();
+    for (const lesson of courseDraftState.lessons) {
+      const normalized = lesson.name.trim().toLowerCase();
+      if (seen.has(normalized)) return lesson.name.trim();
+      seen.add(normalized);
+    }
+    return null;
+  })();
+  if (duplicateLesson) {
+    appToast.error(
+      "Lesson name already exists",
+      "Lesson names must be unique within a course.",
+    );
+    return false;
+  }
+
+  for (const lesson of courseDraftState.lessons) {
+    const seenSubLessonNames = new Set<string>();
+    for (const sub of lesson.subLessons) {
+      const normalized = sub.name.trim().toLowerCase();
+      if (!normalized) continue;
+      if (seenSubLessonNames.has(normalized)) {
+        appToast.error(
+          "Sub-lesson name already exists",
+          `Sub-lesson names in lesson '${lesson.name}' must be unique.`,
+        );
+        return false;
+      }
+      seenSubLessonNames.add(normalized);
+    }
+  }
+
+  return true;
+}
+
+async function validateCourseNameUnique(): Promise<boolean> {
+  const courseName = courseDraftState.courseName.trim().toLowerCase();
+  const { data } = await axios.get("http://localhost:8080/api/admin/courses", {
+    headers: {
+      Authorization: "Bearer 22222222-2222-2222-2222-222222222222",
+    },
+  });
+
+  const courses = Array.isArray(data) ? data : [];
+  const duplicated = courses.some(
+    (item: { title?: string }) =>
+      typeof item?.title === "string" &&
+      item.title.trim().toLowerCase() === courseName,
+  );
+
+  if (duplicated) {
+    courseNameError.value = true;
+    courseNameErrorMessage.value = "Course names must be unique.";
+    scrollToError("#course-name-field");
+    appToast.error(
+      "Course name already exists",
+      "Please use a different course name.",
+    );
+    return false;
+  }
   return true;
 }
 
@@ -145,6 +215,7 @@ async function handleCreateCourse() {
 
   try {
     isSubmitting.value = true;
+    if (!(await validateCourseNameUnique())) return;
 
     const folderId = courseDraftState.courseStorageFolderId;
 
@@ -166,7 +237,18 @@ async function handleCreateCourse() {
       );
     }
 
-    // Upload each sub-lesson IMAGE only (VIDEO is not stored in Supabase Storage)
+    // Upload trailer video to Cloudinary: courses/{courseId}/trailer
+    let trailerVideoUrl: string | null = null;
+    if (courseDraftState.trailerVideoFile) {
+      trailerVideoUrl = await uploadVideoToCloudinary(
+        courseDraftState.trailerVideoFile,
+        `courses/${folderId}/trailer`,
+      );
+    }
+
+    // Upload sub-lesson media:
+    // - IMAGE -> Supabase
+    // - VIDEO -> Cloudinary
     const modules = await Promise.all(
       courseDraftState.lessons.map(async (lesson) => ({
         title: lesson.name.trim(),
@@ -179,6 +261,11 @@ async function handleCreateCourse() {
                 lesson.id,
                 sub.id,
                 folderId,
+              );
+            } else if (sub.fileType === "VIDEO" && sub.videoFile) {
+              mediaUrl = await uploadVideoToCloudinary(
+                sub.videoFile,
+                `courses/${folderId}/lesson/${lesson.id}/sublesson/${sub.id}`,
               );
             }
             return {
@@ -219,6 +306,7 @@ async function handleCreateCourse() {
       price: priceNumber,
       totalLearningTime: totalLearningTimeNumber,
       coverImageUrl,
+      trailerVideoUrl,
       attachmentUrl,
       promoCode,
       modules,
@@ -299,7 +387,7 @@ async function handleCreateCourse() {
                   label="Course name"
                   placeholder="e.g. Service Design Essentials"
                   :error="courseNameError"
-                  error-message="Please enter the course name before adding a lesson."
+                  :error-message="courseNameErrorMessage"
                 />
               </div>
               <div
