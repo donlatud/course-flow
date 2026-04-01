@@ -1,7 +1,7 @@
 <template>
     <section class="bg-linear-to-r from-[#2558DD] to-[#5697FF] h-full w-full flex flex-col 
-    md:flex-row items-center justify-center md:justify-around pt-15 pb-10 md:pb-0 gap-7 relative">
-        <div class="flex flex-col items-center justify-center md:items-start h-28.5 gap-6 md:self-start md:ml-15 md:mt-20 md:gap-11">
+    md:flex-row items-center justify-center md:justify-between pt-15 pb-10 md:pb-0 gap-7 relative px-4 md:px-[140px]">
+        <div class="flex flex-col items-center justify-center md:items-start h-28.5 gap-6 md:self-start md:mt-20 md:gap-11">
             <h1 class="text-headline3 md:text-headline2 md:font-medium text-white">Want to start learning?</h1>
             <SecondaryButton @click="goToRegister">Register here</SecondaryButton>
         </div>

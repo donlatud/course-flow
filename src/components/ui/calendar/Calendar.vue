@@ -57,11 +57,17 @@ const yearRange = computed(() => {
   if (props.minValue && props.maxValue) {
     return createYearRange({ start: props.minValue, end: props.maxValue });
   }
-  const baseDate = toRaw(placeholder.value) || props.defaultPlaceholder || today(getLocalTimeZone());
-  return props.yearRange ?? createYearRange({
+  const baseDate =
+    toRaw(placeholder.value) ||
+    props.defaultPlaceholder ||
+    today(getLocalTimeZone());
+  return (
+    props.yearRange ??
+    createYearRange({
       start: props?.minValue ?? baseDate.cycle("year", -100),
       end: props?.maxValue ?? baseDate.cycle("year", 0),
-    });
+    })
+  );
 });
 
 const isMonthDisabled = (monthDate: DateValue) => {
@@ -74,8 +80,12 @@ const isMonthDisabled = (monthDate: DateValue) => {
   return false;
 };
 
-const [DefineMonthTemplate, ReuseMonthTemplate] = createReusableTemplate<{ date: DateValue }>();
-const [DefineYearTemplate, ReuseYearTemplate] = createReusableTemplate<{ date: DateValue }>();
+const [DefineMonthTemplate, ReuseMonthTemplate] = createReusableTemplate<{
+  date: DateValue;
+}>();
+const [DefineYearTemplate, ReuseYearTemplate] = createReusableTemplate<{
+  date: DateValue;
+}>();
 const forwarded = useForwardPropsEmits(delegatedProps, emits);
 </script>
 
@@ -83,12 +93,22 @@ const forwarded = useForwardPropsEmits(delegatedProps, emits);
   <DefineMonthTemplate v-slot="{ date }">
     <Select
       :model-value="date.month.toString()"
-      @update:model-value="(v) => { placeholder = placeholder.set({ month: Number(v) }); }"
+      @update:model-value="
+        (v) => {
+          placeholder = placeholder.set({ month: Number(v) });
+        }
+      "
     >
-      <SelectTrigger class="h-8 w-[75px] sm:w-[110px] gap-1 border-none bg-transparent px-2 py-0 font-medium text-sm focus:ring-0 shadow-none hover:bg-gray-100 rounded-md cursor-pointer transition-all">
+      <SelectTrigger
+        class="h-8 w-[75px] sm:w-[110px] gap-1 border-none bg-transparent px-2 py-0 font-medium text-sm focus:ring-0 shadow-none hover:bg-gray-100 rounded-md cursor-pointer transition-all"
+      >
         <SelectValue>
-          <span class="sm:hidden">{{ formatter.custom(toDate(date), { month: "short" }) }}</span>
-          <span class="hidden sm:inline">{{ formatter.custom(toDate(date), { month: "long" }) }}</span>
+          <span class="sm:hidden">{{
+            formatter.custom(toDate(date), { month: "short" })
+          }}</span>
+          <span class="hidden sm:inline">{{
+            formatter.custom(toDate(date), { month: "long" })
+          }}</span>
         </SelectValue>
       </SelectTrigger>
       <SelectContent class="z-[110]">
@@ -99,8 +119,12 @@ const forwarded = useForwardPropsEmits(delegatedProps, emits);
           :disabled="isMonthDisabled(month)"
           class="cursor-pointer data-[disabled]:text-gray-300! data-[disabled]:opacity-50! data-[disabled]:pointer-events-none"
         >
-          <span class="sm:hidden">{{ formatter.custom(toDate(month), { month: "short" }) }}</span>
-          <span class="hidden sm:inline">{{ formatter.custom(toDate(month), { month: "long" }) }}</span>
+          <span class="sm:hidden">{{
+            formatter.custom(toDate(month), { month: "short" })
+          }}</span>
+          <span class="hidden sm:inline">{{
+            formatter.custom(toDate(month), { month: "long" })
+          }}</span>
         </SelectItem>
       </SelectContent>
     </Select>
@@ -109,13 +133,24 @@ const forwarded = useForwardPropsEmits(delegatedProps, emits);
   <DefineYearTemplate v-slot="{ date }">
     <Select
       :model-value="date.year.toString()"
-      @update:model-value="(v) => { placeholder = placeholder.set({ year: Number(v) }); }"
+      @update:model-value="
+        (v) => {
+          placeholder = placeholder.set({ year: Number(v) });
+        }
+      "
     >
-      <SelectTrigger class="h-8 w-[75px] sm:w-[85px] gap-1 border-none bg-transparent px-2 py-0 font-medium text-sm focus:ring-0 shadow-none hover:bg-gray-100 rounded-md cursor-pointer transition-all">
+      <SelectTrigger
+        class="h-8 w-[75px] sm:w-[85px] gap-1 border-none bg-transparent px-2 py-0 font-medium text-sm focus:ring-0 shadow-none hover:bg-gray-100 rounded-md cursor-pointer transition-all"
+      >
         <SelectValue />
       </SelectTrigger>
       <SelectContent class="z-[110] max-h-50">
-        <SelectItem v-for="year in yearRange" :key="year.toString()" :value="year.year.toString()" class="cursor-pointer">
+        <SelectItem
+          v-for="year in yearRange"
+          :key="year.toString()"
+          :value="year.year.toString()"
+          class="cursor-pointer"
+        >
           {{ formatter.custom(toDate(year), { year: "numeric" }) }}
         </SelectItem>
       </SelectContent>
@@ -125,30 +160,61 @@ const forwarded = useForwardPropsEmits(delegatedProps, emits);
   <CalendarRoot
     v-slot="{ grid, weekDays, date }"
     v-bind="forwarded"
-    v-model:placeholder="placeholder as any"
-    :class="cn('p-3 bg-white w-full max-w-[320px] sm:max-w-none mx-auto rounded-[10px]', props.class)"
+    :placeholder="placeholder"
+    @update:placeholder="
+      (v: any) => {
+        placeholder = v;
+      }
+    "
+    :class="
+      cn(
+        'p-3 bg-white w-full max-w-[320px] sm:max-w-none mx-auto rounded-[10px]',
+        props.class,
+      )
+    "
   >
     <CalendarHeader class="relative flex items-center justify-between pt-1">
-      <CalendarPrevButton class="bg-transparent hover:bg-gray-100 text-gray-900 border-none cursor-pointer rounded-full h-8 w-8" />
+      <CalendarPrevButton
+        class="bg-transparent hover:bg-gray-100 text-gray-900 border-none cursor-pointer rounded-full h-8 w-8"
+      />
       <div class="flex items-center gap-0 sm:gap-1">
         <ReuseMonthTemplate :date="date" />
         <ReuseYearTemplate :date="date" />
       </div>
-      <CalendarNextButton class="bg-transparent hover:bg-gray-100 text-gray-900 border-none cursor-pointer rounded-full h-8 w-8" />
+      <CalendarNextButton
+        class="bg-transparent hover:bg-gray-100 text-gray-900 border-none cursor-pointer rounded-full h-8 w-8"
+      />
     </CalendarHeader>
 
     <div class="mt-4 flex flex-col items-center">
-      <CalendarGrid v-for="month in grid" :key="month.value.toString()" class="w-full">
+      <CalendarGrid
+        v-for="month in grid"
+        :key="month.value.toString()"
+        class="w-full"
+      >
         <CalendarGridHead>
           <CalendarGridRow class="flex justify-between mb-1">
-            <CalendarHeadCell v-for="day in weekDays" :key="day" class="text-gray-400 font-normal text-[11px] sm:text-xs uppercase w-9 text-center">
+            <CalendarHeadCell
+              v-for="day in weekDays"
+              :key="day"
+              class="text-gray-400 font-normal text-[11px] sm:text-xs uppercase w-9 text-center"
+            >
               {{ day }}
             </CalendarHeadCell>
           </CalendarGridRow>
         </CalendarGridHead>
         <CalendarGridBody>
-          <CalendarGridRow v-for="(weekDates, index) in month.rows" :key="index" class="mt-1 w-full flex justify-between">
-            <CalendarCell v-for="weekDate in weekDates" :key="weekDate.toString()" :date="weekDate" class="p-0 relative flex-1 flex justify-center">
+          <CalendarGridRow
+            v-for="(weekDates, index) in month.rows"
+            :key="index"
+            class="mt-1 w-full flex justify-between"
+          >
+            <CalendarCell
+              v-for="weekDate in weekDates"
+              :key="weekDate.toString()"
+              :date="weekDate"
+              class="p-0 relative flex-1 flex justify-center"
+            >
               <CalendarCellTrigger :day="weekDate" :month="month.value" />
             </CalendarCell>
           </CalendarGridRow>

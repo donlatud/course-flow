@@ -26,7 +26,7 @@ const ghostButtonClass = computed(() =>
     "bg-white text-blue-500 text-[16px] font-bold w-[82px] h-[32px] py-1 px-2",
     "enabled:transition-all enabled:duration-300 enabled:ease-in-out",
     "enabled:hover:bg-white enabled:hover:text-blue-400 enabled:active:text-blue-600",
-    "disabled:bg-white disabled:text-gray-500 disabled:cursor-not-allowed",
+    "disabled:bg-white disabled:text-gray-500 disabled:cursor-not-allowed cursor-pointer",
     props.class,
     (attrs as Record<string, unknown>).class as HTMLAttributes["class"],
   ),
