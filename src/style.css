@@ -254,5 +254,13 @@
 
   .shadow-1 { box-shadow: var(--shadow-1); }
   .shadow-2 { box-shadow: var(--shadow-2); }
+
+  .scrollbar-hide {
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE/Edge Legacy */
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none; /* Chrome/Safari/Edge */
+  }
 }
 

@@ -91,18 +91,14 @@ watch(
         <Button
           variant="outline"
           :disabled="disabled"
-          :class="
-            cn(
-              'h-12! w-full justify-between rounded-[10px]! border bg-white px-4 text-left font-normal shadow-none transition-all duration-200 cursor-pointer',
-              'border-gray-300 hover:bg-white outline-none!',
-              !date && 'text-gray-500',
-              'data-[state=open]:border-orange-500! data-[state=open]:ring-2! data-[state=open]:ring-orange-500/20!',
-              error &&
-                'border-(--color-purple)! ring-2! ring-purple/20!',
-              disabled &&
-                'bg-gray-200! border-gray-400! text-gray-600! cursor-not-allowed!',
-            )
-          "
+          :class="cn(
+            'h-12! w-full justify-between rounded-[10px]! border bg-white px-4 text-left font-normal shadow-none transition-all duration-200 cursor-pointer',
+            'border-gray-300 hover:bg-white outline-none!',
+            !date && 'text-gray-500',
+            'data-[state=open]:border-orange-500! data-[state=open]:ring-2! data-[state=open]:ring-orange-500/20!',
+            error && 'border-purple! ring-2! ring-purple/20!',
+            disabled && 'bg-gray-200! border-gray-400! text-gray-600! cursor-not-allowed!'
+          )"
         >
           <span
             :class="cn('text-body2', date ? 'text-gray-900' : 'text-gray-500')"
@@ -113,14 +109,12 @@ watch(
         </Button>
       </PopoverTrigger>
 
-      <PopoverContent
-        :class="
-          cn(
-            'p-0 rounded-[10px] border border-gray-300 shadow-2 z-100',
-            'w-[calc(100vw-32px)] sm:w-87.5', // Mobile: กว้างเกือบเต็มจอ / Desktop: กว้างคงที่
-          )
-        "
-        align="center"
+      <PopoverContent 
+        :class="cn(
+          'p-0 rounded-[10px] border border-gray-300 shadow-2 z-100',
+          'w-[calc(100vw-32px)] sm:w-87.5' // Mobile: near full width / Desktop: fixed width
+        )" 
+        align="center" 
         :side-offset="8"
       >
         <Calendar
@@ -134,12 +128,7 @@ watch(
         />
       </PopoverContent>
     </Popover>
-
-    <p
-      v-if="error && errorMessage"
-      class="text-body4 text-(--color-purple) mt-0.5"
-    >
-      {{ errorMessage }}
-    </p>
+    
+    <p v-if="error && errorMessage" class="text-body4 text-purple mt-0.5">{{ errorMessage }}</p>
   </div>
 </template>

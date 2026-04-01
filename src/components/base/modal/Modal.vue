@@ -2,29 +2,28 @@
 /**
  * Confirm Modal (Base Component)
  *
- * วิธีใช้:
- * 1) สร้าง state สำหรับเปิด/ปิด modal ที่ parent component
- * 2) ผูกด้วย `v-model:open`
- * 3) ส่ง props ตามที่ต้องการ และดัก events เพื่อจัดการ action
+ * Usage:
+ * 1) Add open/close state in the parent.
+ * 2) Bind with `v-model:open`.
+ * 3) Pass props and handle events for actions.
  *
  * Props:
- * - `open` (ผ่าน v-model): boolean สถานะแสดง/ซ่อน modal
- * - `title?`: หัวข้อ modal
- * - `message?`: ข้อความอธิบาย
- * - `leftText?`: ข้อความปุ่มซ้าย
- * - `rightText?`: ข้อความปุ่มขวา
+ * - `open` (v-model): boolean show/hide
+ * - `title?`: modal title
+ * - `message?`: body text
+ * - `leftText?`: left button label
+ * - `rightText?`: right button label
  * - `type?`: 'primary' | 'secondary'
- *   - 'primary' => ปุ่มซ้ายเป็น Primary, ขวาเป็น Secondary
- *   - 'secondary' => ปุ่มซ้ายเป็น Secondary, ขวาเป็น Primary
- * - `class?`: class เพิ่มเติมสำหรับกล่อง modal (`section`)
+ *   - 'primary' => left Primary, right Secondary
+ *   - 'secondary' => left Secondary, right Primary
+ * - `class?`: extra classes on the modal `section`
  *
  * Events:
- * - `@close`: กดปิดที่ปุ่ม X
- * - `@left-click`: กดปุ่มซ้าย
- * - `@right-click`: กดปุ่มขวา
+ * - `@close`: X button
+ * - `@left-click`: left button
+ * - `@right-click`: right button
  *
- * ตัวอย่าง:
- * ตัวอย่างการเรียกใช้งานใน template:
+ * Example:
  * `<ConfirmDeleteLessonModal
  *    v-model:open="isOpen"
  *    title="Cancel request"
