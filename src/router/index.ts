@@ -6,6 +6,7 @@ import CourseCreatePage from '@/views/admin/CourseCreatePage.vue'
 import LessonCreatePage from '@/views/admin/LessonCreatePage.vue'
 import RegisterView from '@/views/RegisterView.vue'
 import LoginView from '@/views/LoginView.vue'
+import AdminLoginView from '@/views/admin/AdminLoginView.vue'
 const routes = [
   {
     path: '/',
@@ -20,7 +21,7 @@ const routes = [
     path: '/admin/course/create',
     name: 'admin-course-create',
     component: CourseCreatePage,
-  },,
+  },
   {
     path: '/courses',
     component: () => import('@/views/Courses.vue')
@@ -32,6 +33,7 @@ const routes = [
   ,
   { path: "/register", component: RegisterView },
   { path: "/login", component: LoginView },
+  { path: "/admin/login", component: AdminLoginView },
   {
     path: '/admin/course/create/lesson',
     name: 'admin-course-create-lesson',

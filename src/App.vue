@@ -5,7 +5,9 @@ import Sidebar from "@/components/layout/Sidebar.vue";
 import { Toaster } from "@/components/base/toast";
 
 const route = useRoute();
-const isAdmin = computed(() => route.path.startsWith("/admin"));
+const isAdmin = computed(
+  () => route.path.startsWith("/admin") && route.path !== "/admin/login",
+);
 </script>
 
 <template>
