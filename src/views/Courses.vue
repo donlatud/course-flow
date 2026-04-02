@@ -102,7 +102,6 @@ import type { Course } from '@/types/course'
 import VectorYellowTriangle from '@/assets/vectors/vector_triangle_yellow.svg'
 import VectorGreenCross from '@/assets/vectors/vector_cross_green.svg'
 import VectorBlueSmallCircle from '@/assets/vectors/vector_small_circle_blue.svg'
-import VectorBlueHalfCircle from '@/assets/vectors/vector_half_circle_blue.svg'
 import VectorSmallCircleDarkBlue from '@/assets/vectors/vector_small_circle_dark_blue.svg'
 
 const courses = ref<Course[]>([])
