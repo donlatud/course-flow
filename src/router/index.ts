@@ -6,6 +6,8 @@ import CourseCreatePage from '@/views/admin/CourseCreatePage.vue'
 import LessonCreatePage from '@/views/admin/LessonCreatePage.vue'
 import RegisterView from '@/views/RegisterView.vue'
 import LoginView from '@/views/LoginView.vue'
+import AdminLoginView from '@/views/admin/AdminLoginView.vue'
+
 const routes = [
   {
     path: '/',
@@ -37,6 +39,7 @@ const routes = [
     name: 'admin-course-create-lesson',
     component: LessonCreatePage,
   },
+  { path: "/admin/login", component: AdminLoginView },
 ]
 
 const router = createRouter({
