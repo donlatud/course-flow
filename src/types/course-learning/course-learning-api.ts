@@ -1,8 +1,3 @@
-export type ApiAuth =
-  | { type: "x-user-id"; userId: string }
-  | { type: "bearer"; userId: string }
-  | { type: "none" }
-
 /** DTO for `GET /api/courses/{id}/learning` (matches backend `CourseLearningResponse`) */
 export type MaterialFileType = "PDF" | "IMAGE" | "VIDEO"
 
