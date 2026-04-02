@@ -14,7 +14,7 @@
         <!-- Right -->
         <div v-if="isReady" class="flex items-center gap-2 md:gap-8">
           <router-link to="/courses">
-            <button class="text-[14px] font-bold text-blue-500 cursor-pointer">
+            <button class="text-[14px] font-bold text-[#191C77] cursor-pointer">
               Our Courses
             </button>
           </router-link>
