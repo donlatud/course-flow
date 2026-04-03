@@ -67,6 +67,11 @@ const router = createRouter({
       name: "admin-course-create-lesson-edit",
       component: LessonEditPage,
     },
+    {
+      path: "/admin/course/create/lesson",
+      name: "admin-course-create-lesson",
+      component: LessonCreatePage,
+    },
   ],
   scrollBehavior(_to, _from, savedPosition) {
     if (savedPosition) return savedPosition;
