@@ -1,15 +1,23 @@
 export interface Course {
-  id: number
-  image: string
+  id: string
+  coverImageUrl: string
   title: string
-  desc: string
-  lesson: number
-  duration: string
+  description: string
   price: number
-  rating: number
-  students: number
-  level: 'Beginner' | 'Intermediate' | 'Advanced'
-  category: string
+  category: string | null
+  subject: string | null
+  status: string
+  adminId: string
+  createdAt: string
+  updatedAt: string
+  trailerVideoUrl?: string
+  attachmentUrl?: string
+  // Frontend specific fields (computed or added)
+  lesson?: number
+  duration?: string
+  rating?: number
+  students?: number
+  level?: 'Beginner' | 'Intermediate' | 'Advanced'
 }
 
 export interface CourseFilters {

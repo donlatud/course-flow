@@ -51,12 +51,12 @@
                     <CourseCard 
                         v-for="course in filteredCourses"
                         :key="course.id"
-                        :image="course.image"
+                        :image="course.coverImageUrl"
                         :title="course.title"
-                        :desc="course.desc"
-                        :lesson="course.lesson"
-                        :duration="course.duration"
-                        :course-id="course.id"
+                        :description="course.description"
+                        :lesson="course.lesson || 0"
+                        :duration="course.duration || 'N/A'"
+                        :course-id="Number(course.id)"
                     />
                 </div>
                 
@@ -65,12 +65,12 @@
                     <CourseCard 
                         v-for="course in filteredCourses"
                         :key="course.id"
-                        :image="course.image"
+                        :image="course.coverImageUrl"
                         :title="course.title"
-                        :desc="course.desc"
-                        :lesson="course.lesson"
-                        :duration="course.duration"
-                        :course-id="course.id"
+                        :description="course.description"   
+                        :lesson="course.lesson || 0"
+                        :duration="course.duration || 'N/A'"
+                        :course-id="Number(course.id)"
                     />
                 </div>
                 

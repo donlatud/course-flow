@@ -17,7 +17,7 @@
           <!-- Back Button -->
           <button
             @click="goBack"
-            class="relative flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors mb-4"
+            class="relative flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors mb-4 cursor-pointer"
           >
             <img src="@/assets/icon-arrow-back-blue.svg" alt="arrow back" class="w-4 h-3">
             <span class="text-body2 text-blue-500 font-bold">Back</span>
@@ -32,7 +32,7 @@
                 <div class="w-full">
                   <div class="relative">
                     <img
-                      :src="course.image"
+                      :src="course.coverImageUrl"
                       :alt="course.title"
                       class="w-full h-64 md:h-80 object-cover rounded-lg shadow-lg"
                     />
@@ -43,7 +43,7 @@
                 <div class="flex flex-col gap-4">
                   <span class="text-headline3 font-medium">Course Detail</span>
                   <p class="text-lg text-gray-600 mb-6 leading-relaxed">
-                    {{ course.desc }}
+                    {{ course.description }}
                   </p>
                 </div>
 
@@ -56,20 +56,20 @@
                 </div>
 
                 <!-- Other Interesting Courses -->
-                <div class="flex flex-col items-center gap-15 py-15">
+                <div class="flex flex-col  items-center gap-15 py-15">
                   <h2 class="text-2xl font-bold text-gray-900 mb-6 text-center">
                     Other Interesting Courses
                   </h2>
-                  <div class="grid md:grid-cols-2 lg:grid-cols-1 gap-6">
+                  <div class="flex flex-col md:flex-row gap-6">
                     <CourseCard
                       v-for="course in otherCourses"
                       :key="course.id"
-                      :image="course.image"
+                      :image="course.coverImageUrl"
                       :title="course.title"
-                      :desc="course.desc"
-                      :lesson="course.lesson"
-                      :duration="course.duration"
-                      :course-id="course.id"
+                      :description="course.description"
+                      :lesson="course.lesson || 0"
+                      :duration="course.duration || 'N/A'"
+                      :course-id="Number(course.id)"
                     />
                   </div>
                 </div>
@@ -78,34 +78,10 @@
 
             <!-- Desktop Right Sidebar -->
             <div class="hidden lg:block w-80 shrink-0">
-              <div class="sticky top-8 ">
-                <!-- Course Title -->
-                <div class="bg-white rounded-lg border border-gray-200 shadow-sm px-6 py-8 gap-6 flex flex-col">
-                  <span class="text-sm text-orange-500">Course</span>
-                  <h1 class="text-xl font-bold text-gray-900 ">{{ course?.title }}</h1>
-                  
-                  <!-- Course Stats -->
-                  
-                    <span class="text-headline3 font-medium text-gray-700 ">{{ course?.desc }} course</span>
-                  
-
-                  <!-- Price -->
-                  <div class="text-2xl font-bold text-gray-900 ">
-                    THB {{ course?.price }}
-                  </div>  
-
-                  <hr />
-                  <!-- Action Buttons -->
-                  <div class="flex flex-col gap-4 pt-6">
-                    <SecondaryButton class="w-full">
-                      Add to Wishlist
-                    </SecondaryButton>
-                    <PrimaryButton class="w-full" @click="goToCheckout">
-                      Subscribe This Course
-                    </PrimaryButton>
-                  </div>
-                </div>
-              </div>
+              <CourseSidebar 
+                :course="course"
+                :is-purchased="isPurchased"
+              />
             </div>
           </div>
 
@@ -146,7 +122,7 @@
                   class="border-gray-200"
                 >
                   <p class="text-body4 text-gray-700 leading-relaxed">
-                    {{ course?.desc }}
+                    {{ course?.description }}
                   </p>
                 </div>
               </div>
@@ -176,6 +152,7 @@ import Navbar from "@/components/shared/Navbar.vue";
 import AppFooter from "@/components/shared/AppFooter.vue";
 import CourseCard from "@/components/courses/CourseCard.vue";
 import CourseContent from "@/components/courses/CourseContent.vue";
+import CourseSidebar from "@/components/courses/CourseSidebar.vue";
 import { courseService } from "@/services/courseService";
 import type { Course, Lesson } from "@/types/course";
 import PrimaryButton from "@/components/base/button/PrimaryButton.vue";
@@ -190,6 +167,7 @@ const loading = ref(true);
 const error = ref<string | null>(null);
 const allCourses = ref<Course[]>([]);
 const showDescription = ref(false);
+const isPurchased = ref(false); // Set to true if user has purchased this course
 
 const otherCourses = computed(() => {
   if (!course.value) return [];
