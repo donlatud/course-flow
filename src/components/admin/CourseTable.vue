@@ -4,8 +4,12 @@ import iconDelete from "@/assets/icon-delete.svg";
 import iconEdit from "@/assets/icon-edit.svg";
 
 defineProps<{
-  courses: CourseItem[]
-}>()
+  courses: CourseItem[];
+}>();
+
+const emit = defineEmits<{
+  edit: [courseId: string];
+}>();
 </script>
 
 <template>
@@ -66,6 +70,7 @@ defineProps<{
                 type="button"
                 class="inline-flex cursor-pointer items-center justify-center rounded-md p-1 transition hover:bg-yellow-50 hover:opacity-90 active:opacity-100"
                 aria-label="Edit course"
+                @click="emit('edit', course.id)"
               >
                 <img
                   :src="iconEdit"
@@ -77,8 +82,9 @@ defineProps<{
               </button>
               <button
                 type="button"
-                class="inline-flex cursor-pointer items-center justify-center rounded-md p-1 transition hover:bg-red-50 hover:opacity-90 active:opacity-100"
+                class="inline-flex cursor-pointer  items-center justify-center rounded-md p-1 opacity-50"
                 aria-label="Delete course"
+                disabled
               >
                 <img
                   :src="iconDelete"

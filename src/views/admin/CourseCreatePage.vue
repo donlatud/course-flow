@@ -22,6 +22,7 @@ import {
 import { uploadVideoToCloudinary } from "@/lib/cloudinary";
 import {
   courseDraftState,
+  deleteDraftLesson,
   isCourseDraftEmpty,
   resetCourseDraft,
   toLessonTableItems,
@@ -41,11 +42,13 @@ const courseNameErrorMessage = ref(
 );
 const showCancelModal = ref(false);
 const isSubmitting = ref(false);
+let skipLeaveGuard = false;
 let guardNext: NavigationGuardNext | null = null;
 
 const courseCreateFlowRoutes = new Set([
   "admin-course-create",
   "admin-course-create-lesson",
+  "admin-course-create-lesson-edit",
 ]);
 
 const lessons = computed(() => toLessonTableItems(courseDraftState.lessons));
@@ -62,6 +65,10 @@ watch(
 );
 
 onBeforeRouteLeave((to, _from, next) => {
+  if (skipLeaveGuard) {
+    next();
+    return;
+  }
   const targetRouteName = typeof to.name === "string" ? to.name : "";
   if (courseCreateFlowRoutes.has(targetRouteName)) {
     next();
@@ -94,6 +101,14 @@ function scrollToError(selector: string) {
   const target = document.querySelector(selector);
   if (!target) return;
   target.scrollIntoView({ behavior: "smooth", block: "center" });
+}
+
+function goToEditLesson(lessonId: number) {
+  router.push({ name: "admin-course-create-lesson-edit", params: { lessonId } });
+}
+
+function handleDeleteLesson(lessonId: number) {
+  deleteDraftLesson(lessonId);
 }
 
 function goToAddLesson() {
@@ -308,6 +323,7 @@ async function handleCreateCourse() {
       "Course created",
       "The course has been created successfully.",
     );
+    skipLeaveGuard = true;
     resetCourseDraft();
     router.push({ name: "admin-course" });
   } catch (error: any) {
@@ -503,7 +519,11 @@ async function handleCreateCourse() {
               </div>
             </div>
 
-            <LessonTable :lessons="lessons" />
+            <LessonTable
+              :lessons="lessons"
+              @edit="goToEditLesson"
+              @delete="handleDeleteLesson"
+            />
           </div>
         </div>
   </section>

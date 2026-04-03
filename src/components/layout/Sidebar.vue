@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { RouterLink, useRoute } from "vue-router";
+import { RouterLink, useRoute, useRouter } from "vue-router";
 import {
   BookOpen,
   ClipboardCheck,
@@ -8,6 +8,7 @@ import {
 } from "lucide-vue-next";
 
 const route = useRoute();
+const router = useRouter();
 
 const menuButtonClass =
   "group px-6 py-4 flex w-full items-center gap-4 text-left text-body2 leading-none font-normal text-gray-800 transition-colors hover:bg-gray-200 cursor-pointer";
@@ -16,6 +17,11 @@ const isActive = (path: string) => route.path === path;
 
 const isCourseSection = () =>
   route.path === "/admin/course" || route.path.startsWith("/admin/course/");
+
+const logout = () => {
+  localStorage.removeItem("admin_user_id");
+  router.push("/admin/login");
+};
 </script>
 
 <template>
@@ -229,7 +235,7 @@ const isCourseSection = () =>
       </div>
     </nav>
     <div class="flex-grow flex items-end pb-6">
-      <button type="button" :class="menuButtonClass">
+      <button type="button" :class="menuButtonClass" @click="logout">
         <LogOut
           :size="24"
           class="text-blue-300 transition-colors group-hover:text-blue-500"

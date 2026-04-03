@@ -13,6 +13,8 @@ const props = defineProps<{
   accept?: string;
   disabled?: boolean;
   modelValue?: File | null;
+  /** Existing uploaded URL — shown when modelValue is null (for edit forms) */
+  existingUrl?: string;
 }>();
 
 const emit = defineEmits<{
@@ -29,6 +31,11 @@ const isImage = computed(
 const isVideo = computed(
   () => props.modelValue?.type.startsWith("video/") ?? false,
 );
+
+const existingIsVideo = computed(() => {
+  const url = props.existingUrl ?? "";
+  return /\.(mp4|mov|avi|webm)(\?|$)/i.test(url);
+});
 
 watch(
   () => props.modelValue,
@@ -153,6 +160,51 @@ const previewShellClass = cn(
           Remove
         </button>
       </div>
+    </div>
+
+    <!-- Existing image URL (edit mode, no new file selected) -->
+    <div
+      v-else-if="!modelValue && existingUrl && !existingIsVideo"
+      :class="cn(previewShellClass, props.class)"
+    >
+      <img
+        :src="existingUrl"
+        alt=""
+        class="h-full w-full cursor-pointer object-cover"
+        @click="openPicker"
+      >
+      <button
+        type="button"
+        class="absolute right-2 top-2 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-gray-700 shadow-md transition-colors hover:bg-white disabled:opacity-50"
+        :disabled="disabled"
+        aria-label="Change file"
+        @click="openPicker"
+      >
+        <Plus class="h-4 w-4" :stroke-width="2" />
+      </button>
+    </div>
+
+    <!-- Existing video URL (edit mode, no new file selected) -->
+    <div
+      v-else-if="!modelValue && existingUrl && existingIsVideo"
+      :class="cn(previewShellClass, props.class)"
+    >
+      <video
+        :src="existingUrl"
+        class="h-full w-full object-cover"
+        controls
+        playsinline
+        preload="metadata"
+      />
+      <button
+        type="button"
+        class="absolute right-2 top-2 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-gray-700 shadow-md transition-colors hover:bg-white disabled:opacity-50"
+        :disabled="disabled"
+        aria-label="Change file"
+        @click="openPicker"
+      >
+        <Plus class="h-4 w-4" :stroke-width="2" />
+      </button>
     </div>
 
     <!-- Empty dropzone -->
