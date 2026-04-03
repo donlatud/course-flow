@@ -26,17 +26,17 @@ const forwardedProps = useForwardProps(delegatedProps);
         buttonVariants({ variant: 'ghost' }),
         'size-9 p-0 font-normal aria-selected:opacity-100 cursor-pointer rounded-full!',
 
-        // ปรับให้เป็นสีเทาอ่อน (Gray-300 หรือ Gray-400) และลด Opacity
-        'data-[outside-view]:text-gray-300! data-[outside-view]:opacity-50! data-[outside-view]:pointer-events-none',
+        // Outside month: muted + lower opacity
+        'data-outside-view:text-gray-300! data-outside-view:opacity-50! data-outside-view:pointer-events-none',
 
-        // วันปัจจุบัน (Today)
+        // Today (not selected)
         '[&[data-today]:not([data-selected])]:bg-gray-100! [&[data-today]:not([data-selected])]:text-gray-900!',
 
-        // สีตอนเลือก (Selected)
-        'data-[selected]:bg-blue-500! data-[selected]:text-white! data-[selected]:opacity-100!',
+        // Selected
+        'data-selected:bg-blue-500! data-selected:text-white! data-selected:opacity-100!',
 
-        // สถานะ Disabled (อายุ < 12 หรือ > 100)
-        'data-[disabled]:text-gray-200! data-[disabled]:opacity-30!',
+        // Disabled (e.g. age < 12 or > 100)
+        'data-disabled:text-gray-200! data-disabled:opacity-30!',
 
         props.class,
       )

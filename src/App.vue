@@ -26,6 +26,6 @@ const isAdmin = computed(
     <RouterView />
   </div>
 
-  <Toaster />
+  <Toaster position="bottom-right" :offset="{ bottom: 16, right: 16 }" />
 </template>
 

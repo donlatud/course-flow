@@ -21,13 +21,13 @@ const forwardedProps = useForwardProps(delegatedProps)
   <SelectItem
     v-bind="forwardedProps"
     :class="cn(
-      // ปรับ padding-left (pl-4) ให้เท่ากับตอนไม่เลือก เพราะเราเอาเครื่องหมายถูกออกแล้ว
+      // Match padding when checkmark is removed
       'relative flex w-full cursor-default items-center rounded-sm py-2 px-4 text-sm outline-none select-none transition-colors',
       
-      // เมื่อเอาเมาส์วาง (Focus)
+      // Focus
       'focus:bg-gray-100 focus:text-accent-foreground',
       
-      // เมื่อรายการนี้ถูกเลือก (Checked) ให้เปลี่ยนสีพื้นหลัง (ตามรูป Frame 427321029)
+      // Selected (checked) background
       'data-[state=checked]:bg-gray-100 data-[state=checked]:font-medium', 
       
       props.class,

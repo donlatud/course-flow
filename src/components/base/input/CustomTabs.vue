@@ -33,11 +33,11 @@ const emit = defineEmits(['update:modelValue'])
         :key="tab.value"
         :value="tab.value"
         :class="cn(
-          // ✅ สไตล์พื้นฐาน: ตัวหนังสือสีเทา จางๆ
+          // Default: muted label
           'relative h-12 rounded-none border-b-2 border-b-transparent bg-transparent px-6 py-3 text-base font-medium text-slate-400 transition-all',
           'hover:text-slate-600',
           'data-[state=active]:border-b-black data-[state=active]:text-black data-[state=active]:shadow-none',
-          // ปรับแต่งเส้นขีดด้านล่างให้ชัดเจนตามรูป
+          // Active bottom border emphasis
         )"
       >
         {{ tab.label }}
