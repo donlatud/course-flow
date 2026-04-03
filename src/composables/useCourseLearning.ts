@@ -19,6 +19,7 @@ import {
   progressModelValueFromDto,
 } from "@/utils/course-learning/mapCourseLearningToSidebar"
 import { toast } from "vue-sonner"
+import { useOfflineQueue } from "@/composables/useOfflineQueue"
 
 export type CourseLearningStore = ReturnType<typeof createCourseLearningStore>
 
@@ -51,6 +52,8 @@ export function createCourseLearningStore() {
   const assignmentSubmitError = ref<string | null>(null)
   const assignmentSubmitted = ref(false)
   const submittedAnswerText = ref<string>("")
+
+  const { addToQueue, isOnline } = useOfflineQueue()
 
   const flatLessons = computed<Lesson[]>(() => modules.value.flatMap((m) => m.lessons))
 
@@ -199,9 +202,41 @@ export function createCourseLearningStore() {
       })
       return true
     } catch (e) {
-      error.value =
-        e instanceof Error ? e.message : "Could not complete lesson before continuing"
-      return false
+      const errorMessage = e instanceof Error ? e.message : "Could not complete lesson before continuing"
+      const isNetworkError = 
+        errorMessage.toLowerCase().includes("network") ||
+        errorMessage.toLowerCase().includes("fetch") ||
+        errorMessage.toLowerCase().includes("offline") ||
+        !isOnline.value
+
+      if (isNetworkError) {
+        // Allow navigation but queue the completion for later
+        const materialId = mat.materialId
+        addToQueue(
+          async () => {
+            const created = await createMaterialProgress({
+              enrollmentId: enr,
+              materialId,
+            })
+            const updated = await updateMaterialProgress(created.id, {
+              status: "COMPLETED",
+              completedAt: new Date().toISOString(),
+            })
+            patchMaterialInStore(materialId, {
+              completed: true,
+              status: "COMPLETED",
+              lastPosition: updated.lastPosition ?? 0,
+            })
+          },
+          `Complete ${mat.fileType} material`
+        )
+        
+        error.value = "Lesson completion will be saved when you're back online"
+        return true // Allow navigation
+      } else {
+        error.value = errorMessage
+        return false
+      }
     }
   }
 
@@ -347,8 +382,44 @@ export function createCourseLearningStore() {
           : x,
       )
     } catch (e) {
-      assignmentSubmitError.value =
-        e instanceof Error ? e.message : "Could not submit assignment"
+      const errorMessage = e instanceof Error ? e.message : "Could not submit assignment"
+      const isNetworkError = 
+        errorMessage.toLowerCase().includes("network") ||
+        errorMessage.toLowerCase().includes("fetch") ||
+        errorMessage.toLowerCase().includes("offline") ||
+        !isOnline.value
+
+      if (isNetworkError) {
+        // Add to offline queue for retry when network is back
+        const assignmentId = a.assignmentId
+        const submissionText = assignmentText.value
+
+        addToQueue(
+          async () => {
+            const res = await submitAssignment(assignmentId, { submissionText })
+            
+            assignmentSubmitted.value = true
+            submittedAnswerText.value = res.submissionText ?? submissionText
+
+            assignments.value = assignments.value.map((x) =>
+              x.assignmentId === assignmentId
+                ? {
+                    ...x,
+                    submitted: true,
+                    submissionId: res.submissionId,
+                    submissionStatus: res.status,
+                    submittedAt: res.submittedAt,
+                  }
+                : x,
+            )
+          },
+          `Assignment submission`
+        )
+        
+        assignmentSubmitError.value = "Your assignment will be submitted when you're back online"
+      } else {
+        assignmentSubmitError.value = errorMessage
+      }
     } finally {
       assignmentSubmitting.value = false
     }

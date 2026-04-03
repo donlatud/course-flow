@@ -13,7 +13,7 @@ const { error, loading } = useCourseLearning()
 
 <template>
   <aside
-    class="flex w-full flex-col gap-4 rounded-[8px] bg-white p-4 shadow-1 lg:h-[1085px] lg:w-[357px] lg:overflow-hidden"
+    class="flex w-full flex-col gap-4 rounded-[8px] bg-white p-4 shadow-1 md:w-[320px] lg:h-[1085px] lg:w-[357px] md:overflow-hidden"
     aria-label="Course sidebar"
     :aria-busy="loading ? 'true' : 'false'"
   >

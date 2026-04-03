@@ -27,8 +27,8 @@ watch(
   <div>
     <OfflineBanner />
     <Navbar />
-    <!-- Mobile View -->
-    <main class=" lg:hidden">
+    <!-- Mobile View (< 768px) -->
+    <main class="md:hidden">
       <section class="pt-8 px-4 w-full">
         <CourseInfoSidebar :course-id="courseId" />
       </section>
@@ -39,14 +39,14 @@ watch(
         <LessonNavigation />
       </section>
     </main>
-    <!-- Desktop View -->
-    <main class="flex justify-center">
-      <div class="hidden lg:block lg:max-w-[1440px]">
-        <section class="flex px-[160px] pt-[100px] gap-6">
+    <!-- Tablet & Desktop View (>= 768px) -->
+    <main class="hidden md:flex md:justify-center">
+      <div class="w-full max-w-[1440px]">
+        <section class="flex flex-col md:flex-row px-6 pt-12 gap-6 md:px-8 md:pt-16 lg:px-20 lg:pt-[100px] xl:px-40">
           <CourseInfoSidebar :course-id="courseId" />
           <CourseMainContent />
         </section>
-        <section class="px-15 bg-white">
+        <section class="px-6 md:px-8 lg:px-20 xl:px-40 bg-white">
           <LessonNavigation />
         </section>
       </div>

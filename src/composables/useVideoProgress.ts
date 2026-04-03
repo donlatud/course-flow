@@ -8,6 +8,7 @@ import type {
   MaterialProgressResponse,
   MaterialProgressStatus,
 } from "@/types/course-learning/course-learning-api"
+import { useOfflineQueue } from "./useOfflineQueue"
 
 type SaveReason = "interval" | "pause" | "ended" | "seeked"
 
@@ -67,6 +68,8 @@ export function useVideoProgress(options: UseVideoProgressOptions) {
   let ensureInFlight: Promise<string | null> | null = null
   /** Serialize resume work (loadedmetadata vs watchers) */
   let resumeSerializeChain: Promise<void> = Promise.resolve()
+
+  const { addToQueue, isOnline } = useOfflineQueue()
 
   function getVideo(): HTMLVideoElement | null {
     return unref(options.videoRef) ?? null
@@ -148,7 +151,42 @@ export function useVideoProgress(options: UseVideoProgressOptions) {
       status.value = res.status ?? nextStatus
       lastSavedPosition.value = res.lastPosition ?? pos
     } catch (e) {
-      error.value = e instanceof Error ? e.message : "Failed to save video progress"
+      const errorMessage = e instanceof Error ? e.message : "Failed to save video progress"
+      const isNetworkError = 
+        errorMessage.toLowerCase().includes("network") ||
+        errorMessage.toLowerCase().includes("fetch") ||
+        errorMessage.toLowerCase().includes("offline") ||
+        !isOnline.value
+
+      if (isNetworkError) {
+        // Add to offline queue for retry when network is back
+        const id = progressId.value
+        if (id) {
+          const nextStatus: MaterialProgressStatus =
+            reason === "ended" ? "COMPLETED" : "IN_PROGRESS"
+          const payload = {
+            status: nextStatus,
+            lastPosition: pos,
+            completedAt: reason === "ended" ? new Date().toISOString() : undefined,
+          }
+
+          addToQueue(
+            async () => {
+              const res = (await updateMaterialProgress(id, payload)) as MaterialProgressResponse
+              status.value = res.status ?? nextStatus
+              lastSavedPosition.value = res.lastPosition ?? pos
+              error.value = null
+            },
+            `Video progress at ${pos}s (${reason})`
+          )
+          
+          error.value = "Progress will be saved when you're back online"
+        } else {
+          error.value = "Offline: Progress not saved"
+        }
+      } else {
+        error.value = errorMessage
+      }
     } finally {
       isSaving.value = false
     }

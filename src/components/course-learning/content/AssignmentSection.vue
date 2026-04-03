@@ -30,7 +30,7 @@ function onSubmit() {
 </script>
 
 <template>
-  <section class="flex flex-col gap-4 rounded-[8px] bg-blue-100 p-4 lg:mt-[47px] lg:h-[314px] lg:gap-[25px] lg:p-6">
+  <section class="flex flex-col gap-4 rounded-[8px] bg-blue-100 p-4 md:gap-5 md:p-5 lg:mt-[47px] lg:h-[314px] lg:gap-[25px] lg:p-6">
     <header class="flex items-center justify-between">
       <div class="text-body1 text-black">
         {{ title || "Assignment" }}

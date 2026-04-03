@@ -2,6 +2,7 @@
 import type { HTMLAttributes } from "vue"
 import { computed } from "vue"
 import { ProgressBar } from "@/components/base/progress-bar"
+import SkeletonProgress from "@/components/course-learning/skeleton/SkeletonProgress.vue"
 import { useCourseLearning } from "@/composables/useCourseLearning"
 
 const props = withDefaults(
@@ -32,7 +33,8 @@ const label = computed(() => {
 </script>
 
 <template>
-  <section class="flex flex-col gap-2" aria-labelledby="sidebar-progress-label">
+  <SkeletonProgress v-if="loading" />
+  <section v-else class="flex flex-col gap-2" aria-labelledby="sidebar-progress-label">
     <p id="sidebar-progress-label" class="text-body4 text-gray-700">
       {{ label }}
     </p>
