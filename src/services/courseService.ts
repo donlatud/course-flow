@@ -1,134 +1,9 @@
 import type { Course, CourseContent } from '@/types/course'
 import { mockCourseContents } from '@/data/mockCourseContent'
-import courseImage1 from '@/assets/images/image_course_1.svg'
 
-// Mock API service for courses
+// API service for courses
 export class CourseService {
   private static instance: CourseService
-  private courses: Course[] = [
-    {
-      id: "1de3f989-4be1-4dc5-8f5d-43e6e9579731",
-      coverImageUrl: courseImage1,
-      title: "Introduction to Web Development",
-      description: "Learn the fundamentals of HTML, CSS, and JavaScript to build modern websites from scratch.",
-      price: 49.99,
-      category: "Web Development",
-      subject: null,
-      status: "PUBLISHED",
-      adminId: "22222222-2222-2222-2222-222222222222",
-      createdAt: "2026-04-01T16:07:02.74104",
-      updatedAt: "2026-04-01T16:07:02.74104",
-      lesson: 8,
-      duration: "12 Hours",
-      rating: 4.5,
-      students: 1234,
-      level: "Beginner"
-    },
-    {
-      id: 2,
-      cover_image_url: courseImage1,
-      title: "Advanced React Development",
-      description: "Master React concepts including hooks, state management, and modern development patterns.",
-      lesson: 12,
-      duration: "18 Hours",
-      price: 79.99,
-      rating: 4.8,
-      students: 892,
-      level: "Advanced",
-      category: "Frontend"
-    },
-    {
-      id: 3,
-      cover_image_url: courseImage1,
-      title: "Vue.js Complete Guide",
-      description: "Build dynamic web applications with Vue.js, including Vue Router and Vuex for state management.",
-      lesson: 10,
-      duration: "15 Hours",
-      price: 69.99,
-      rating: 4.6,
-      students: 756,
-      level: "Intermediate",
-      category: "Frontend"
-    },
-    {
-      id: 4,
-      cover_image_url: courseImage1,
-      title: "Node.js Backend Development",
-      description: "Create powerful server-side applications with Node.js, Express, and MongoDB.",
-      lesson: 9,
-      duration: "14 Hours",
-      price: 74.99,
-      rating: 4.7,
-      students: 623,
-      level: "Intermediate",
-      category: "Backend"
-    },
-    {
-      id: 5,
-      cover_image_url: courseImage1,
-      title: "Python for Data Science",
-      description: "Learn Python programming with focus on data analysis, visualization, and machine learning basics.",
-      lesson: 11,
-      duration: "20 Hours",
-      price: 89.99,
-      rating: 4.9,
-      students: 1456,
-      level: "Intermediate",
-      category: "Data Science"
-    },
-    {
-      id: 6,
-      cover_image_url: courseImage1,
-      title: "Mobile App Development",
-      description: "Build cross-platform mobile applications using React Native and modern development tools.",
-      lesson: 7,
-      duration: "16 Hours",
-      price: 84.99,
-      rating: 4.4,
-      students: 445,
-      level: "Intermediate",
-      category: "Mobile"
-    },
-    {
-      id: 7,
-      cover_image_url: courseImage1,
-      title: "UI/UX Design Principles",
-      description: "Master user interface and user experience design with modern tools and best practices.",
-      lesson: 6,
-      duration: "10 Hours",
-      price: 54.99,
-      rating: 4.6,
-      students: 892,
-      level: "Beginner",
-      category: "Design"
-    },
-    {
-      id: 8,
-      cover_image_url: courseImage1,
-      title: "Database Management",
-      description: "Learn SQL and NoSQL database design, optimization, and management techniques.",
-      lesson: 8,
-      duration: "12 Hours",
-      price: 64.99,
-      rating: 4.5,
-      students: 334,
-      level: "Intermediate",
-      category: "Database"
-    },
-    {
-      id: 9,
-      cover_image_url: courseImage1,
-      title: "Cloud Computing Basics",
-      description: "Introduction to cloud services, deployment, and infrastructure management with AWS.",
-      lesson: 5,
-      duration: "8 Hours",
-      price: 44.99,
-      rating: 4.3,
-      students: 567,
-      level: "Beginner",
-      category: "Cloud"
-    }
-  ]
 
   private constructor() {}
 
@@ -142,28 +17,24 @@ export class CourseService {
   // Get all courses
   async getAllCourses(): Promise<Course[]> {
     try {
-      console.log('Attempting to fetch from: /api/courses/published (via proxy)')
+      console.log('Fetching courses from: /api/courses/published (via proxy)')
       const response = await fetch('/api/courses/published')
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`)
       }
       const courses = await response.json()
       console.log('✅ Successfully fetched courses from API:', courses)
-      console.log('Sample course data:', courses[0])
       return courses
     } catch (error) {
       console.error('❌ Failed to fetch courses from API:', error)
-      console.log('🔄 Falling back to mock data...')
-      // Fallback to mock data if API fails
-      console.log('Mock data sample:', this.courses[0])
-      return [...this.courses]
+      throw new Error('Failed to load courses. Please check if the API server is running.')
     }
   }
 
   // Get course by ID
   async getCourseById(id: string): Promise<Course | null> {
     try {
-      console.log(`Attempting to fetch course ${id} from: /api/courses/${id} (via proxy)`)
+      console.log(`Fetching course ${id} from: /api/courses/${id} (via proxy)`)
       const response = await fetch(`/api/courses/${id}`)
       if (!response.ok) {
         if (response.status === 404) {
@@ -177,22 +48,36 @@ export class CourseService {
       return course
     } catch (error) {
       console.error(`❌ Failed to fetch course ${id} from API:`, error)
-      console.log(`🔄 Falling back to mock data for course ${id}...`)
-      // Fallback to mock data if API fails
-      return this.courses.find(course => String(course.id) === id) || null
+      throw new Error('Failed to load course. Please check if the API server is running.')
     }
   }
 
   // Get courses by category
   async getCoursesByCategory(category: string): Promise<Course[]> {
-    await new Promise(resolve => setTimeout(resolve, 400))
-    return this.courses.filter(course => course.category === category)
+    try {
+      const response = await fetch(`/api/courses/published?category=${encodeURIComponent(category)}`)
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+      return await response.json()
+    } catch (error) {
+      console.error('Failed to fetch courses by category:', error)
+      throw new Error('Failed to load courses by category.')
+    }
   }
 
   // Get courses by level
   async getCoursesByLevel(level: string): Promise<Course[]> {
-    await new Promise(resolve => setTimeout(resolve, 400))
-    return this.courses.filter(course => course.level === level)
+    try {
+      const response = await fetch(`/api/courses/published?level=${encodeURIComponent(level)}`)
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+      return await response.json()
+    } catch (error) {
+      console.error('Failed to fetch courses by level:', error)
+      throw new Error('Failed to load courses by level.')
+    }
   }
 
   // Search courses
@@ -202,52 +87,82 @@ export class CourseService {
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`)
       }
-      const courses = await response.json()
-      return courses
+      return await response.json()
     } catch (error) {
-      console.error('Failed to search courses from API:', error)
-      // Fallback to local search from mock data if API fails
-      const lowercaseQuery = query.toLowerCase()
-      return this.courses.filter(course => 
-        course.title.toLowerCase().includes(lowercaseQuery) ||
-        course.description.toLowerCase().includes(lowercaseQuery) ||
-        course.category.toLowerCase().includes(lowercaseQuery)
-      )
+      console.error('Failed to search courses:', error)
+      throw new Error('Failed to search courses.')
     }
   }
 
   // Get featured courses (top rated)
   async getFeaturedCourses(limit: number = 6): Promise<Course[]> {
-    await new Promise(resolve => setTimeout(resolve, 400))
-    return [...this.courses]
-      .sort((a, b) => b.rating - a.rating)
-      .slice(0, limit)
+    try {
+      const response = await fetch(`/api/courses/published?featured=true&limit=${limit}`)
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+      return await response.json()
+    } catch (error) {
+      console.error('Failed to fetch featured courses:', error)
+      throw new Error('Failed to load featured courses.')
+    }
   }
 
   // Get course categories
   async getCategories(): Promise<string[]> {
-    await new Promise(resolve => setTimeout(resolve, 200))
-    const categories = [...new Set(this.courses.map(course => course.category))]
-    return categories.sort()
+    try {
+      const response = await fetch('/api/courses/categories')
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+      return await response.json()
+    } catch (error) {
+      console.error('Failed to fetch categories:', error)
+      throw new Error('Failed to load categories.')
+    }
   }
 
   // Get course levels
   async getLevels(): Promise<string[]> {
-    await new Promise(resolve => setTimeout(resolve, 200))
-    const levels = [...new Set(this.courses.map(course => course.level))]
-    return levels.sort()
+    try {
+      const response = await fetch('/api/courses/levels')
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+      return await response.json()
+    } catch (error) {
+      console.error('Failed to fetch levels:', error)
+      throw new Error('Failed to load levels.')
+    }
   }
 
   // Get course content (modules and lessons)
   async getCourseContent(courseId: number): Promise<CourseContent | null> {
-    await new Promise(resolve => setTimeout(resolve, 400))
-    return mockCourseContents[courseId] || null
+    try {
+      const response = await fetch(`/api/courses/${courseId}/content`)
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+      return await response.json()
+    } catch (error) {
+      console.error('Failed to fetch course content:', error)
+      // Fallback to mock data for course content
+      return mockCourseContents[courseId] || null
+    }
   }
 
   // Get all course contents
   async getAllCourseContents(): Promise<CourseContent[]> {
-    await new Promise(resolve => setTimeout(resolve, 600))
-    return Object.values(mockCourseContents)
+    try {
+      const response = await fetch('/api/courses/contents')
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+      return await response.json()
+    } catch (error) {
+      console.error('Failed to fetch all course contents:', error)
+      throw new Error('Failed to load all course contents.')
+    }
   }
 }
 
