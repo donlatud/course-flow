@@ -1,28 +1,34 @@
 import type { Course, CourseContent } from '@/types/course'
 import { mockCourseContents } from '@/data/mockCourseContent'
+import courseImage1 from '@/assets/images/image_course_1.svg'
 
 // Mock API service for courses
 export class CourseService {
   private static instance: CourseService
   private courses: Course[] = [
     {
-      id: 1,
-      image: '/src/assets/images/image_course_1.svg',
+      id: "1de3f989-4be1-4dc5-8f5d-43e6e9579731",
+      coverImageUrl: courseImage1,
       title: "Introduction to Web Development",
-      desc: "Learn the fundamentals of HTML, CSS, and JavaScript to build modern websites from scratch.",
+      description: "Learn the fundamentals of HTML, CSS, and JavaScript to build modern websites from scratch.",
+      price: 49.99,
+      category: "Web Development",
+      subject: null,
+      status: "PUBLISHED",
+      adminId: "22222222-2222-2222-2222-222222222222",
+      createdAt: "2026-04-01T16:07:02.74104",
+      updatedAt: "2026-04-01T16:07:02.74104",
       lesson: 8,
       duration: "12 Hours",
-      price: 49.99,
       rating: 4.5,
       students: 1234,
-      level: "Beginner",
-      category: "Web Development"
+      level: "Beginner"
     },
     {
       id: 2,
-      image: '/src/assets/images/image_course_1.svg',
+      cover_image_url: courseImage1,
       title: "Advanced React Development",
-      desc: "Master React concepts including hooks, state management, and modern development patterns.",
+      description: "Master React concepts including hooks, state management, and modern development patterns.",
       lesson: 12,
       duration: "18 Hours",
       price: 79.99,
@@ -33,9 +39,9 @@ export class CourseService {
     },
     {
       id: 3,
-      image: '/src/assets/images/image_course_1.svg',
+      cover_image_url: courseImage1,
       title: "Vue.js Complete Guide",
-      desc: "Build dynamic web applications with Vue.js, including Vue Router and Vuex for state management.",
+      description: "Build dynamic web applications with Vue.js, including Vue Router and Vuex for state management.",
       lesson: 10,
       duration: "15 Hours",
       price: 69.99,
@@ -46,9 +52,9 @@ export class CourseService {
     },
     {
       id: 4,
-      image: '/src/assets/images/image_course_1.svg',
+      cover_image_url: courseImage1,
       title: "Node.js Backend Development",
-      desc: "Create powerful server-side applications with Node.js, Express, and MongoDB.",
+      description: "Create powerful server-side applications with Node.js, Express, and MongoDB.",
       lesson: 9,
       duration: "14 Hours",
       price: 74.99,
@@ -59,9 +65,9 @@ export class CourseService {
     },
     {
       id: 5,
-      image: '/src/assets/images/image_course_1.svg',
+      cover_image_url: courseImage1,
       title: "Python for Data Science",
-      desc: "Learn Python programming with focus on data analysis, visualization, and machine learning basics.",
+      description: "Learn Python programming with focus on data analysis, visualization, and machine learning basics.",
       lesson: 11,
       duration: "20 Hours",
       price: 89.99,
@@ -72,9 +78,9 @@ export class CourseService {
     },
     {
       id: 6,
-      image: '/src/assets/images/image_course_1.svg',
+      cover_image_url: courseImage1,
       title: "Mobile App Development",
-      desc: "Build cross-platform mobile applications using React Native and modern development tools.",
+      description: "Build cross-platform mobile applications using React Native and modern development tools.",
       lesson: 7,
       duration: "16 Hours",
       price: 84.99,
@@ -85,9 +91,9 @@ export class CourseService {
     },
     {
       id: 7,
-      image: '/src/assets/images/image_course_1.svg',
+      cover_image_url: courseImage1,
       title: "UI/UX Design Principles",
-      desc: "Master user interface and user experience design with modern tools and best practices.",
+      description: "Master user interface and user experience design with modern tools and best practices.",
       lesson: 6,
       duration: "10 Hours",
       price: 54.99,
@@ -98,9 +104,9 @@ export class CourseService {
     },
     {
       id: 8,
-      image: '/src/assets/images/image_course_1.svg',
+      cover_image_url: courseImage1,
       title: "Database Management",
-      desc: "Learn SQL and NoSQL database design, optimization, and management techniques.",
+      description: "Learn SQL and NoSQL database design, optimization, and management techniques.",
       lesson: 8,
       duration: "12 Hours",
       price: 64.99,
@@ -111,9 +117,9 @@ export class CourseService {
     },
     {
       id: 9,
-      image: '/src/assets/images/image_course_1.svg',
+      cover_image_url: courseImage1,
       title: "Cloud Computing Basics",
-      desc: "Introduction to cloud services, deployment, and infrastructure management with AWS.",
+      description: "Introduction to cloud services, deployment, and infrastructure management with AWS.",
       lesson: 5,
       duration: "8 Hours",
       price: 44.99,
@@ -143,11 +149,13 @@ export class CourseService {
       }
       const courses = await response.json()
       console.log('✅ Successfully fetched courses from API:', courses)
+      console.log('Sample course data:', courses[0])
       return courses
     } catch (error) {
       console.error('❌ Failed to fetch courses from API:', error)
       console.log('🔄 Falling back to mock data...')
       // Fallback to mock data if API fails
+      console.log('Mock data sample:', this.courses[0])
       return [...this.courses]
     }
   }
@@ -202,7 +210,7 @@ export class CourseService {
       const lowercaseQuery = query.toLowerCase()
       return this.courses.filter(course => 
         course.title.toLowerCase().includes(lowercaseQuery) ||
-        course.desc.toLowerCase().includes(lowercaseQuery) ||
+        course.description.toLowerCase().includes(lowercaseQuery) ||
         course.category.toLowerCase().includes(lowercaseQuery)
       )
     }
