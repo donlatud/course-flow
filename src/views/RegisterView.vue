@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from "vue";
-import { RouterLink, useRouter } from "vue-router";
+import { RouterLink } from "vue-router";
 import Navbar from "@/components/shared/Navbar.vue";
 import CustomInput from "@/components/base/input/CustomInput.vue";
 import CustomDatePicker from "@/components/base/input/CustomDatePicker.vue";
@@ -9,7 +9,6 @@ import GhostButton from "@/components/base/button/GhostButton.vue";
 import { api } from "@/lib/api";
 import { useAuth } from "@/composables/useAuth";
 
-const router = useRouter();
 const { login } = useAuth();
 
 const name = ref("");
@@ -52,10 +51,7 @@ const handleRegister = async () => {
       educationalBackground: educationalBackground.value,
     });
 
-    // login อัตโนมัติหลัง register
     await login(email.value, password.value);
-
-    router.push("/");
   } catch (error: any) {
     errorMessage.value = "Register failed. Please try again.";
   }

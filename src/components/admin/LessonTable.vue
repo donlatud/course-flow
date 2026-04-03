@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import iconDelete from "@/assets/icon-delete.svg";
 import iconEdit from "@/assets/icon-edit.svg";
+import iconDelete from "@/assets/icon-delete.svg";
 
 defineProps<{
   lessons: Array<{
@@ -8,6 +8,11 @@ defineProps<{
     name: string;
     subLesson: number;
   }>;
+}>();
+
+const emit = defineEmits<{
+  edit: [lessonId: number];
+  delete: [lessonId: number];
 }>();
 </script>
 
@@ -65,6 +70,7 @@ defineProps<{
                 type="button"
                 class="inline-flex cursor-pointer items-center justify-center rounded-md p-1 transition hover:bg-red-50 hover:opacity-90 active:opacity-100"
                 aria-label="Delete lesson"
+                @click="emit('delete', lesson.id)"
               >
                 <img
                   :src="iconDelete"
@@ -78,6 +84,7 @@ defineProps<{
                 type="button"
                 class="inline-flex cursor-pointer items-center justify-center rounded-md p-1 transition hover:bg-blue-50 hover:opacity-90 active:opacity-100"
                 aria-label="Edit lesson"
+                @click="emit('edit', lesson.id)"
               >
                 <img
                   :src="iconEdit"

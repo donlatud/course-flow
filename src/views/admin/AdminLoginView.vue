@@ -1,13 +1,15 @@
 <script setup lang="ts">
 import { ref } from "vue";
-import { useAuth } from "@/composables/useAuth";
+import { useRouter } from "vue-router";
+import { api } from "@/lib/api";
 import CustomInput from "@/components/base/input/CustomInput.vue";
 
-const { login, error } = useAuth();
+const router = useRouter();
 
 const email = ref("");
 const password = ref("");
 const submitted = ref(false);
+const loading = ref(false);
 const isError = ref(false);
 const errorMessage = ref("");
 
@@ -18,12 +20,29 @@ const handleLogin = async () => {
 
   if (!email.value || !password.value) return;
 
-  await login(email.value, password.value, "/admin/course");
+  loading.value = true;
+  try {
+    const { data } = await api.post("/api/auth/admin-login", {
+      email: email.value,
+      password: password.value,
+    });
 
-  if (error.value) {
+    localStorage.setItem("admin_user_id", data.userId);
+    router.push("/admin/course");
+  } catch (err: any) {
     isError.value = true;
-    errorMessage.value =
-      "Login failed. Please ensure your email and password are correct.";
+    const status = err.response?.status;
+    if (status === 403) {
+      errorMessage.value = "This account does not have admin access.";
+    } else if (status === 401) {
+      errorMessage.value = "Invalid email or password.";
+    } else if (status === 404) {
+      errorMessage.value = "Account not found. Please register first.";
+    } else {
+      errorMessage.value = "Login failed. Please try again.";
+    }
+  } finally {
+    loading.value = false;
   }
 };
 
@@ -249,10 +268,11 @@ const resetError = () => {
 
         <button
           type="button"
-          class="mt-2 h-12 w-full rounded-lg bg-blue-600 text-[16px] font-semibold text-white transition-colors hover:bg-blue-500 active:bg-blue-700"
+          class="mt-2 h-12 w-full rounded-lg bg-blue-600 text-[16px] font-semibold text-white transition-colors hover:bg-blue-500 active:bg-blue-700 disabled:opacity-60"
+          :disabled="loading"
           @click="handleLogin"
         >
-          Log in
+          {{ loading ? "Logging in…" : "Log in" }}
         </button>
       </div>
     </div>
