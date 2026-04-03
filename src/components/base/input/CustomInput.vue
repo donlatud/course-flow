@@ -89,7 +89,7 @@ const paddingRight = computed(() => {
         :disabled="disabled"
         :aria-invalid="hasError || undefined"
         :class="cn(
-          'h-12 w-full rounded-[10px] border bg-white px-4',
+          'h-12 w-full rounded-[10px] border bg-white px-4 py-3',
           'text-body2 text-gray-900 placeholder:text-gray-500',
           'shadow-none ring-0',
           'transition-all duration-200',

@@ -6,7 +6,7 @@ import CustomInput from "@/components/base/input/CustomInput.vue";
 import CustomDatePicker from "@/components/base/input/CustomDatePicker.vue";
 import PrimaryButton from "@/components/base/button/PrimaryButton.vue";
 import GhostButton from "@/components/base/button/GhostButton.vue";
-import api from "@/lib/api";
+import { api } from "@/lib/api";
 import { useAuth } from "@/composables/useAuth";
 
 const router = useRouter();
