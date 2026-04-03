@@ -199,9 +199,7 @@ const logout = () => {
       <div class="text-body2">
         <RouterLink
           to="/admin/course"
-          :class="[menuButtonClass, isCourseSection() ? 'bg-gray-200' : '']"
-          :class="[menuButtonClass, isCourseSection() ? 'bg-gray-200' : '']"
-        >
+          :class="[menuButtonClass, isCourseSection() ? 'bg-gray-200' : '']"        >
           <BookOpen
             :size="24"
             class="text-blue-300 transition-colors group-hover:text-blue-500"
