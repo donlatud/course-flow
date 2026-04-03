@@ -100,7 +100,7 @@
                     <SecondaryButton class="w-full">
                       Add to Wishlist
                     </SecondaryButton>
-                    <PrimaryButton class="w-full">
+                    <PrimaryButton class="w-full" @click="goToCheckout">
                       Subscribe This Course
                     </PrimaryButton>
                   </div>
@@ -157,7 +157,7 @@
                 <SecondaryButton class="w-1/2 h-8.5 text-[12px] font-bold">
                   Add to Wishlist
                 </SecondaryButton>
-                <PrimaryButton class="w-1/2 h-8.5 text-[12px] font-bold">
+                <PrimaryButton class="w-1/2 h-8.5 text-[12px] font-bold" @click="goToCheckout">
                   Subscribe This Course
                 </PrimaryButton>
               </div>
@@ -203,6 +203,13 @@ const toggleDescription = () => {
 
 const goBack = () => {
   router.push("/courses");
+};
+
+const goToCheckout = () => {
+  router.push({
+    name: "checkout",
+    params: { courseId: String(route.params.id) },
+  });
 };
 
 const handleLessonSelected = (lesson: Lesson) => {
