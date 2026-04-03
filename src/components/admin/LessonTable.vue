@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import type { LessonItem } from "@/views/admin/lesson.mock";
+import iconEdit from "@/assets/icon-edit.svg";
+import iconDelete from "@/assets/icon-delete.svg";
 
 defineProps<{
   lessons: Array<{

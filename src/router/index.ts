@@ -8,6 +8,7 @@ import RegisterView from "@/views/RegisterView.vue";
 import LoginView from "@/views/LoginView.vue";
 import Courses from "@/views/Courses.vue";
 import CourseDetail from "@/views/CourseDetail.vue";
+import CourseLearningPage from "@/views/CourseLearningPage.vue";
 import LessonEditPage from "@/views/admin/LessonEditPage.vue";
 import CourseEditPage from "@/views/admin/CourseEditPage.vue";
 
@@ -65,11 +66,6 @@ const router = createRouter({
       path: "/admin/course/create/lesson/:lessonId/edit",
       name: "admin-course-create-lesson-edit",
       component: LessonEditPage,
-    },
-    {
-      path: "/admin/course/create/lesson",
-      name: "admin-course-create-lesson",
-      component: LessonCreatePage,
     },
   ],
   scrollBehavior(_to, _from, savedPosition) {

@@ -1,5 +1,7 @@
 <script setup lang="ts">
-import type { CourseItem } from "@/views/admin/course.mock";
+import type { CourseItem } from "@/types/admin-course";
+import iconEdit from "@/assets/icon-edit.svg";
+import iconDelete from "@/assets/icon-delete.svg";
 
 defineProps<{
   courses: CourseItem[];
