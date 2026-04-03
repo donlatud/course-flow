@@ -2,8 +2,12 @@
 import type { CourseItem } from "@/views/admin/course.mock";
 
 defineProps<{
-  courses: CourseItem[]
-}>()
+  courses: CourseItem[];
+}>();
+
+const emit = defineEmits<{
+  edit: [courseId: string];
+}>();
 </script>
 
 <template>
@@ -62,41 +66,31 @@ defineProps<{
             <div class="flex justify-center gap-3">
               <button
                 type="button"
-                class="text-blue-500 transition-colors hover:text-blue-700"
+                class="inline-flex cursor-pointer items-center justify-center rounded-md p-1 transition hover:bg-yellow-50 hover:opacity-90 active:opacity-100"
+                aria-label="Edit course"
+                @click="emit('edit', course.id)"
               >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  class="h-5 w-5"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                  />
-                </svg>
+                <img
+                  :src="iconEdit"
+                  alt=""
+                  class="pointer-events-none h-5 w-5"
+                  width="20"
+                  height="20"
+                />
               </button>
               <button
                 type="button"
-                class="text-red-400 transition-colors hover:text-red-600"
+                class="inline-flex cursor-pointer  items-center justify-center rounded-md p-1 opacity-50"
+                aria-label="Delete course"
+                disabled
               >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  class="h-5 w-5"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                  />
-                </svg>
+                <img
+                  :src="iconDelete"
+                  alt=""
+                  class="pointer-events-none h-5 w-5"
+                  width="20"
+                  height="20"
+                />
               </button>
             </div>
           </td>

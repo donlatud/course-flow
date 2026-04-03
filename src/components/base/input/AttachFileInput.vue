@@ -13,6 +13,8 @@ const props = defineProps<{
   accept?: string;
   disabled?: boolean;
   modelValue?: File | null;
+  /** Existing uploaded URL — shown when modelValue is null (for edit forms) */
+  existingUrl?: string;
 }>();
 
 const emit = defineEmits<{
@@ -90,6 +92,34 @@ const boxClass =
       >
         <X class="h-4 w-4" :stroke-width="2" />
       </button>
+    </div>
+
+    <!-- Existing file URL (edit mode) -->
+    <div
+      v-else-if="!modelValue && existingUrl"
+      role="button"
+      tabindex="0"
+      :class="
+        cn(
+          'relative cursor-pointer transition-colors hover:border-blue-300 hover:bg-[#EEF2FA]',
+          boxClass,
+          props.class,
+        )
+      "
+      @click="openPicker"
+      @keydown.enter.prevent="openPicker"
+    >
+      <FileText
+        class="h-8 w-8 shrink-0 text-blue-400"
+        :stroke-width="1.5"
+        aria-hidden="true"
+      />
+      <p
+        class="line-clamp-3 w-full break-all text-center text-[11px] leading-snug text-gray-800"
+      >
+        {{ existingUrl.split("/").pop() ?? "Attached file" }}
+      </p>
+      <span class="text-[10px] text-blue-500">Click to replace</span>
     </div>
 
     <!-- Empty -->

@@ -172,6 +172,25 @@ export function addDraftLesson(payload: {
   courseDraftState.nextLessonId += 1;
 }
 
+export function updateDraftLesson(
+  lessonId: number,
+  payload: { name: string; subLessons: DraftSubLesson[] },
+) {
+  const index = courseDraftState.lessons.findIndex((l) => l.id === lessonId);
+  if (index === -1) return;
+  courseDraftState.lessons[index] = {
+    id: lessonId,
+    name: payload.name,
+    subLessons: payload.subLessons,
+  };
+}
+
+export function deleteDraftLesson(lessonId: number) {
+  courseDraftState.lessons = courseDraftState.lessons.filter(
+    (l) => l.id !== lessonId,
+  );
+}
+
 export function toLessonTableItems(lessons: DraftLesson[]): LessonTableItem[] {
   return lessons.map((lesson) => ({
     id: lesson.id,

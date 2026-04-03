@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { computed, nextTick, ref, watch } from "vue";
-import { onBeforeRouteLeave, useRoute, useRouter } from "vue-router";
+import { computed, nextTick, onMounted, ref, watch } from "vue";
+import { onBeforeRouteLeave, useRouter, useRoute } from "vue-router";
 import type { NavigationGuardNext } from "vue-router";
 import { ArrowLeft, GripVertical } from "lucide-vue-next";
 import iconDelete from "@/assets/icon-delete.svg";
@@ -11,14 +11,16 @@ import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { appToast } from "@/components/base/toast";
 import {
-  addDraftLesson,
   courseDraftState,
   createEmptySubLesson,
+  updateDraftLesson,
   type DraftSubLesson,
 } from "@/views/admin/course-create.state";
 
 const router = useRouter();
 const route = useRoute();
+
+const lessonId = computed(() => Number(route.params.lessonId));
 const fromEditCourseId = computed(
   () => (route.query.courseId as string | undefined) || undefined,
 );
@@ -26,37 +28,29 @@ const fromEditCourseId = computed(
 const lessonName = ref("");
 const lessonNameError = ref(false);
 const lessonNameErrorMessage = ref("Please enter the lesson name.");
-const subLessons = ref<DraftSubLesson[]>([createEmptySubLesson()]);
-/** IDs of sub-lessons with empty name after failed validation */
+const subLessons = ref<DraftSubLesson[]>([]);
 const subLessonNameErrorIds = ref<Set<number>>(new Set());
 const subLessonNameErrorMessageById = ref<Record<number, string>>({});
 const isSubmitting = ref(false);
+const notFound = ref(false);
 
-/** When user picks a file, store it for upload at submit time and clear any stale URL. */
-function handleMediaChange(subLesson: DraftSubLesson, file: File | null) {
-  subLesson.uploadedUrl = null;
-  if (!file) {
-    subLesson.videoFile = null;
-  }
-}
-
-function subLessonNameHasError(id: number) {
-  return subLessonNameErrorIds.value.has(id);
-}
-
-function subLessonNameErrorMessage(id: number) {
-  return (
-    subLessonNameErrorMessageById.value[id] ??
-    "Please enter a name for this sub-lesson."
-  );
-}
 const showCancelModal = ref(false);
-const showCreateModal = ref(false);
+const showSaveModal = ref(false);
 let guardNext: NavigationGuardNext | null = null;
 
 const courseTitle = computed(() =>
   courseDraftState.courseName.trim() || "Untitled Course",
 );
+
+onMounted(() => {
+  const lesson = courseDraftState.lessons.find((l) => l.id === lessonId.value);
+  if (!lesson) {
+    notFound.value = true;
+    return;
+  }
+  lessonName.value = lesson.name;
+  subLessons.value = lesson.subLessons.map((sub) => ({ ...sub }));
+});
 
 watch(lessonName, (value) => {
   if (value.trim()) {
@@ -83,30 +77,35 @@ watch(
   { deep: true },
 );
 
-function isLessonFormEmpty() {
-  if (lessonName.value.trim()) return false;
-  return subLessons.value.every(
-    (s) => !s.name.trim() && !s.detail.trim() && !s.videoFile,
+function isFormDirty() {
+  const original = courseDraftState.lessons.find(
+    (l) => l.id === lessonId.value,
   );
+  if (!original) return false;
+  if (lessonName.value !== original.name) return true;
+  if (subLessons.value.length !== original.subLessons.length) return true;
+  return subLessons.value.some((sub, i) => {
+    const orig = original.subLessons[i];
+    return (
+      sub.name !== orig.name ||
+      sub.detail !== orig.detail ||
+      sub.fileType !== orig.fileType ||
+      sub.videoFile !== orig.videoFile
+    );
+  });
 }
 
 onBeforeRouteLeave((_to, _from, next) => {
-  if (isLessonFormEmpty() || isSubmitting.value) {
+  if (!isFormDirty() || isSubmitting.value) {
     next();
     return;
   }
-
   guardNext = next;
   showCancelModal.value = true;
 });
 
 function confirmCancel() {
   showCancelModal.value = false;
-  lessonName.value = "";
-  lessonNameError.value = false;
-  lessonNameErrorMessage.value = "Please enter the lesson name.";
-  subLessonNameErrorIds.value = new Set();
-  subLessons.value = [createEmptySubLesson()];
   guardNext?.();
   guardNext = null;
 }
@@ -115,6 +114,24 @@ function keepEditing() {
   showCancelModal.value = false;
   guardNext?.(false);
   guardNext = null;
+}
+
+function handleMediaChange(subLesson: DraftSubLesson, file: File | null) {
+  subLesson.uploadedUrl = null;
+  if (!file) {
+    subLesson.videoFile = null;
+  }
+}
+
+function subLessonNameHasError(id: number) {
+  return subLessonNameErrorIds.value.has(id);
+}
+
+function getSubLessonNameErrorMessage(id: number) {
+  return (
+    subLessonNameErrorMessageById.value[id] ??
+    "Please enter a name for this sub-lesson."
+  );
 }
 
 function addSubLesson() {
@@ -167,11 +184,14 @@ function validateLessonForm() {
 
   const normalizedLessonName = lessonName.value.trim().toLowerCase();
   const hasDuplicateLessonName = courseDraftState.lessons.some(
-    (lesson) => lesson.name.trim().toLowerCase() === normalizedLessonName,
+    (lesson) =>
+      lesson.id !== lessonId.value &&
+      lesson.name.trim().toLowerCase() === normalizedLessonName,
   );
   if (hasDuplicateLessonName) {
     lessonNameError.value = true;
-    lessonNameErrorMessage.value = "Lesson names must be unique within a course.";
+    lessonNameErrorMessage.value =
+      "Lesson names must be unique within a course.";
     scrollToError("#lesson-name-field");
     void focusLessonNameInput();
     appToast.error(
@@ -235,16 +255,16 @@ function validateLessonForm() {
   return true;
 }
 
-function requestCreateLesson() {
+function requestSaveLesson() {
   if (!validateLessonForm()) return;
-  showCreateModal.value = true;
+  showSaveModal.value = true;
 }
 
-function confirmCreateLesson() {
-  showCreateModal.value = false;
-
+function confirmSaveLesson() {
+  showSaveModal.value = false;
   isSubmitting.value = true;
-  addDraftLesson({
+
+  updateDraftLesson(lessonId.value, {
     name: lessonName.value.trim(),
     subLessons: subLessons.value.map((item) => ({
       ...item,
@@ -253,7 +273,7 @@ function confirmCreateLesson() {
     })),
   });
 
-  appToast.success("Lesson added", "The lesson was added to this course.");
+  appToast.success("Lesson updated", "The lesson changes have been saved.");
   if (fromEditCourseId.value) {
     router.push({
       name: "admin-course-edit",
@@ -268,7 +288,7 @@ function confirmCreateLesson() {
 <template>
   <section class="flex min-h-screen flex-col bg-gray-100 max-w-[1920px]">
     <div
-      class="mx-auto flex h-[92px] w-full  shrink-0 items-center justify-between gap-6 border-b border-gray-200 bg-white px-8"
+      class="mx-auto flex h-[92px] w-full shrink-0 items-center justify-between gap-6 border-b border-gray-200 bg-white px-8"
     >
       <div class="flex min-w-0 flex-1 items-center gap-4">
         <button
@@ -287,11 +307,11 @@ function confirmCreateLesson() {
           <ArrowLeft :size="22" stroke-width="2" />
         </button>
         <div class="min-w-0">
-          <p class="text-body4 text-gray-500">
+          <p class="text-headline3 text-gray-500">
             Course
             <span class="font-medium text-gray-700">'{{ courseTitle }}'</span>
           </p>
-          <h1 class="text-headline3 text-gray-900">Add Lesson</h1>
+        
         </div>
       </div>
 
@@ -313,15 +333,33 @@ function confirmCreateLesson() {
         <button
           type="button"
           class="h-15 min-w-[100px] rounded-xl bg-blue-500 px-6 text-[16px] font-bold text-white transition-colors hover:bg-blue-400 active:bg-blue-700"
-          @click="requestCreateLesson"
+          @click="requestSaveLesson"
         >
-          Create
+          Save
         </button>
       </div>
     </div>
 
     <div class="min-h-0 flex-1 overflow-y-auto px-8 py-10">
-      <div class="mx-auto w-full max-w-[1920px] rounded-3xl border border-[#E8E3F5] bg-white py-10 px-25 shadow-sm">
+      <!-- Lesson not found state -->
+      <div
+        v-if="notFound"
+        class="mx-auto flex w-full max-w-[1920px] flex-col items-center justify-center gap-4 rounded-3xl border border-[#E8E3F5] bg-white py-20 shadow-sm"
+      >
+        <p class="text-headline4 text-gray-500">Lesson not found.</p>
+        <button
+          type="button"
+          class="rounded-xl bg-blue-500 px-6 py-3 text-[16px] font-bold text-white hover:bg-blue-400"
+          @click="router.push({ name: 'admin-course-create' })"
+        >
+          Back to Course
+        </button>
+      </div>
+
+      <div
+        v-else
+        class="mx-auto w-full max-w-[1920px] rounded-3xl border border-[#E8E3F5] bg-white py-10 px-25 shadow-sm"
+      >
         <div class="mx-auto flex w-full max-w-[920px] flex-col gap-10">
           <div id="lesson-name-field">
             <CustomInput
@@ -339,8 +377,8 @@ function confirmCreateLesson() {
             <div class="space-y-2">
               <h2 class="text-headline4 text-gray-700">Sub-Lesson</h2>
               <p class="text-body4 text-gray-500">
-                Note: Add as many sub-lessons as needed. At least one sub-lesson
-                is required and the last one cannot be deleted.
+                Note: Add as many sub-lessons as needed. At least one
+                sub-lesson is required and the last one cannot be deleted.
               </p>
             </div>
 
@@ -364,7 +402,9 @@ function confirmCreateLesson() {
                           label="Sub-lesson name"
                           placeholder="Place Holder"
                           :error="subLessonNameHasError(subLesson.id)"
-                          :error-message="subLessonNameErrorMessage(subLesson.id)"
+                          :error-message="
+                            getSubLessonNameErrorMessage(subLesson.id)
+                          "
                         />
                       </div>
 
@@ -397,9 +437,12 @@ function confirmCreateLesson() {
                           Image
                         </button>
                       </div>
+
                       <MediaInput
                         v-model="subLesson.videoFile"
-                        :title="subLesson.fileType === 'VIDEO' ? 'Video *' : 'Image *'"
+                        :title="
+                          subLesson.fileType === 'VIDEO' ? 'Video *' : 'Image *'
+                        "
                         subtitle=""
                         :uploadtext="
                           subLesson.fileType === 'VIDEO'
@@ -414,6 +457,7 @@ function confirmCreateLesson() {
                         "
                         @change="handleMediaChange(subLesson, $event)"
                       />
+
                       <div class="flex flex-col gap-1">
                         <label
                           class="text-body3 font-medium text-gray-800"
@@ -425,13 +469,15 @@ function confirmCreateLesson() {
                           :id="`sub-detail-${subLesson.id}`"
                           v-model="subLesson.detail"
                           placeholder="Optional description for this sub-lesson"
-                          :class="cn(
-                            'w-full resize-y rounded-[10px] border border-gray-300 bg-white px-4 py-3',
-                            'text-body2 text-gray-900 placeholder:text-gray-500 shadow-none',
-                            'transition-all duration-200 outline-none',
-                            'focus-visible:border-orange-500 focus-visible:ring-2 focus-visible:ring-orange-500/20',
-                            'min-h-[100px]',
-                          )"
+                          :class="
+                            cn(
+                              'w-full resize-y rounded-[10px] border border-gray-300 bg-white px-4 py-3',
+                              'text-body2 text-gray-900 placeholder:text-gray-500 shadow-none',
+                              'transition-all duration-200 outline-none',
+                              'focus-visible:border-orange-500 focus-visible:ring-2 focus-visible:ring-orange-500/20',
+                              'min-h-[100px]',
+                            )
+                          "
                         />
                       </div>
                     </div>
@@ -457,8 +503,6 @@ function confirmCreateLesson() {
                         />
                         Delete
                       </button>
-
-                      
                     </div>
                   </div>
                 </div>
@@ -480,23 +524,23 @@ function confirmCreateLesson() {
 
   <Modal
     v-model:open="showCancelModal"
-    title="Cancel Lesson Creation"
-    message="Are you sure you want to cancel? All information you have entered for this lesson will be lost."
+    title="Discard Changes"
+    message="Are you sure you want to leave? All unsaved changes to this lesson will be lost."
     left-text="Keep editing"
-    right-text="Yes, cancel"
+    right-text="Yes, discard"
     type="secondary"
     @left-click="keepEditing"
     @right-click="confirmCancel"
   />
 
   <Modal
-    v-model:open="showCreateModal"
-    title="Confirm Lesson Creation"
-    message="Are you sure you want to create this lesson? The lesson will be added to the course."
+    v-model:open="showSaveModal"
+    title="Save Lesson Changes"
+    message="Are you sure you want to save the changes to this lesson?"
     left-text="No, keep editing"
-    right-text="Yes, create"
+    right-text="Yes, save"
     type="secondary"
-    @left-click="showCreateModal = false"
-    @right-click="confirmCreateLesson"
+    @left-click="showSaveModal = false"
+    @right-click="confirmSaveLesson"
   />
 </template>

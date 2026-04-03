@@ -2,7 +2,7 @@ import { ref, watch } from "vue"
 import type { User } from "@supabase/supabase-js"
 import { supabase } from "@/lib/supabase"
 import { useRouter } from "vue-router"
-import { api } from "@/lib/api"
+import{ api }from "@/lib/api"
 
 const user = ref<User | null>(null)
 const isReady = ref(false)
@@ -58,18 +58,14 @@ export const useAuth = () => {
     }
   }
 
-  const login = async (
-    email: string,
-    password: string,
-    redirectPath: string = "/admin/course",
-  ) => {
+  const login = async (email: string, password: string) => {
     loading.value = true
     error.value = ""
     try {
       const { data, error: err } = await supabase.auth.signInWithPassword({ email, password })
       if (err) throw err
       user.value = data.user
-      router.push(redirectPath)
+      router.push("/")
     } catch (err: any) {
       error.value = err.message
     } finally {
