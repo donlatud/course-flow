@@ -1,5 +1,4 @@
 import { createRouter, createWebHistory } from "vue-router";
-import CourseLearningPage from "@/views/CourseLearningPage.vue";
 import HomeView from "@/views/HomeView.vue";
 import CoursePage from "@/views/admin/CoursePage.vue";
 import CourseCreatePage from "@/views/admin/CourseCreatePage.vue";

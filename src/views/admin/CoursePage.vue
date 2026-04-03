@@ -4,7 +4,7 @@ import { Search } from "lucide-vue-next";
 import { useRouter } from "vue-router";
 import Table from "@/components/admin/CourseTable.vue";
 import { api } from "@/lib/api";
-import type { CourseItem } from "@/views/admin/course.mock";
+import type { CourseItem } from "@/types/admin-course";
 import { resetCourseDraft } from "@/views/admin/course-create.state";
 
 const router = useRouter();
