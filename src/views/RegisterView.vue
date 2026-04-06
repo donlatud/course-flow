@@ -142,6 +142,7 @@ const resetError = () => {
             placeholder="Enter Email"
             label="Email"
             :error="submitted && !email"
+            :error-message="submitted && !email ? 'Please enter your email' : ''"
             :submitted="submitted"
             @input="resetError"
           />

@@ -1,7 +1,7 @@
 import axios from "axios";
+import { supabase } from "@/lib/supabase";
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8080";
-const DEV_USER_ID = import.meta.env.VITE_DEV_ADMIN_USER_ID ?? "";
 
 export const api = axios.create({
   baseURL: BASE_URL,
@@ -10,14 +10,13 @@ export const api = axios.create({
   },
 });
 
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem("admin_user_id");
+api.interceptors.request.use(async (config) => {
+  const { data } = await supabase.auth.getSession()
+  const token = data.session?.access_token
 
   if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  } else if (import.meta.env.DEV && DEV_USER_ID) {
-    config.headers.Authorization = `Bearer ${DEV_USER_ID}`;
+    config.headers.Authorization = `Bearer ${token}`
   }
 
-  return config;
+  return config
 });
