@@ -55,7 +55,10 @@ interface PersistedCourseDraft {
   courseDetail: string;
   promoEnabled: boolean;
   promoCode: string;
-  promoDiscount: string;
+  promoMinPurchase: string;
+  promoDiscountType: "THB" | "%";
+  promoDiscountThb: string;
+  promoDiscountPercent: string;
   promoValidFrom: string;
   promoValidUntil: string;
   lessons: PersistedLesson[];
@@ -65,6 +68,26 @@ interface PersistedCourseDraft {
 
 function newCourseStorageFolderId(): string {
   return crypto.randomUUID();
+}
+
+/** Migrate older drafts that stored a single `promoDiscount` for both modes. */
+function splitLegacyPromoDiscount(
+  thb: string | undefined,
+  pct: string | undefined,
+  legacy: string | undefined,
+  discountType: "THB" | "%",
+): { promoDiscountThb: string; promoDiscountPercent: string } {
+  if ((thb?.trim() ?? "") !== "" || (pct?.trim() ?? "") !== "") {
+    return {
+      promoDiscountThb: thb ?? "",
+      promoDiscountPercent: pct ?? "",
+    };
+  }
+  const leg = legacy?.trim() ?? "";
+  if (discountType === "%") {
+    return { promoDiscountThb: "", promoDiscountPercent: leg };
+  }
+  return { promoDiscountThb: leg, promoDiscountPercent: "" };
 }
 
 function createDefaultPersistedState(): PersistedCourseDraft {
@@ -77,7 +100,10 @@ function createDefaultPersistedState(): PersistedCourseDraft {
     courseDetail: "",
     promoEnabled: false,
     promoCode: "",
-    promoDiscount: "",
+    promoMinPurchase: "",
+    promoDiscountType: "THB" as "THB" | "%",
+    promoDiscountThb: "",
+    promoDiscountPercent: "",
     promoValidFrom: "",
     promoValidUntil: "",
     lessons: [],
@@ -94,13 +120,25 @@ function loadPersistedState(): PersistedCourseDraft {
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
     if (!raw) return createDefaultPersistedState();
-    const parsed = JSON.parse(raw) as PersistedCourseDraft;
+    const parsed = JSON.parse(raw) as PersistedCourseDraft & {
+      promoDiscount?: string;
+    };
     if (!parsed || typeof parsed !== "object") {
       return createDefaultPersistedState();
     }
+    const discountType = (parsed.promoDiscountType ?? "THB") as "THB" | "%";
+    const { promoDiscountThb, promoDiscountPercent } = splitLegacyPromoDiscount(
+      parsed.promoDiscountThb,
+      parsed.promoDiscountPercent,
+      parsed.promoDiscount,
+      discountType,
+    );
     return {
       ...createDefaultPersistedState(),
       ...parsed,
+      promoDiscountThb,
+      promoDiscountPercent,
+      promoDiscountType: discountType,
       lessons: parsed.lessons ?? [],
       courseStorageFolderId:
         typeof parsed.courseStorageFolderId === "string" &&
@@ -128,7 +166,10 @@ export const courseDraftState = reactive({
   attachmentFile: null as File | null,
   promoEnabled: initial.promoEnabled,
   promoCode: initial.promoCode,
-  promoDiscount: initial.promoDiscount,
+  promoMinPurchase: initial.promoMinPurchase ?? "",
+  promoDiscountType: (initial.promoDiscountType ?? "THB") as "THB" | "%",
+  promoDiscountThb: initial.promoDiscountThb ?? "",
+  promoDiscountPercent: initial.promoDiscountPercent ?? "",
   promoValidFrom: initial.promoValidFrom,
   promoValidUntil: initial.promoValidUntil,
   lessons: (initial.lessons ?? []).map((lesson) => ({
@@ -212,7 +253,9 @@ export function isCourseDraftEmpty(): boolean {
   if (s.promoEnabled) return false;
   if (
     s.promoCode.trim() ||
-    s.promoDiscount.trim() ||
+    s.promoMinPurchase.trim() ||
+    s.promoDiscountThb.trim() ||
+    s.promoDiscountPercent.trim() ||
     s.promoValidFrom.trim() ||
     s.promoValidUntil.trim()
   ) {
@@ -236,7 +279,10 @@ export function resetCourseDraft() {
   courseDraftState.attachmentFile = null;
   courseDraftState.promoEnabled = false;
   courseDraftState.promoCode = "";
-  courseDraftState.promoDiscount = "";
+  courseDraftState.promoMinPurchase = "";
+  courseDraftState.promoDiscountType = "THB";
+  courseDraftState.promoDiscountThb = "";
+  courseDraftState.promoDiscountPercent = "";
   courseDraftState.promoValidFrom = "";
   courseDraftState.promoValidUntil = "";
   courseDraftState.lessons = [];
@@ -260,7 +306,10 @@ function persistState() {
     courseDetail: courseDraftState.courseDetail,
     promoEnabled: courseDraftState.promoEnabled,
     promoCode: courseDraftState.promoCode,
-    promoDiscount: courseDraftState.promoDiscount,
+    promoMinPurchase: courseDraftState.promoMinPurchase,
+    promoDiscountType: courseDraftState.promoDiscountType,
+    promoDiscountThb: courseDraftState.promoDiscountThb,
+    promoDiscountPercent: courseDraftState.promoDiscountPercent,
     promoValidFrom: courseDraftState.promoValidFrom,
     promoValidUntil: courseDraftState.promoValidUntil,
     lessons: courseDraftState.lessons.map((lesson) => ({
@@ -295,7 +344,10 @@ watch(
     courseDetail: courseDraftState.courseDetail,
     promoEnabled: courseDraftState.promoEnabled,
     promoCode: courseDraftState.promoCode,
-    promoDiscount: courseDraftState.promoDiscount,
+    promoMinPurchase: courseDraftState.promoMinPurchase,
+    promoDiscountType: courseDraftState.promoDiscountType,
+    promoDiscountThb: courseDraftState.promoDiscountThb,
+    promoDiscountPercent: courseDraftState.promoDiscountPercent,
     promoValidFrom: courseDraftState.promoValidFrom,
     promoValidUntil: courseDraftState.promoValidUntil,
     lessons: courseDraftState.lessons.map((lesson) => ({

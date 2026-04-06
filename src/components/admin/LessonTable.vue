@@ -2,13 +2,20 @@
 import iconEdit from "@/assets/icon-edit.svg";
 import iconDelete from "@/assets/icon-delete.svg";
 
-defineProps<{
-  lessons: Array<{
-    id: number;
-    name: string;
-    subLesson: number;
-  }>;
-}>();
+withDefaults(
+  defineProps<{
+    lessons: Array<{
+      id: number;
+      name: string;
+      subLesson: number;
+    }>;
+    /** Shown when there are no rows (header is hidden). */
+    emptyMessage?: string;
+  }>(),
+  {
+    emptyMessage: "No lessons yet. Please click 'Add lesson' to create one.",
+  },
+);
 
 const emit = defineEmits<{
   edit: [lessonId: number];
@@ -17,8 +24,22 @@ const emit = defineEmits<{
 </script>
 
 <template>
-  <div class="overflow-x-auto w-full rounded-xl border border-gray-100 bg-white shadow-sm">
-    <table class="w-full border-collapse text-left">
+  <div
+    :class="[
+      'w-full overflow-x-auto',
+      lessons.length === 0
+        ? ''
+        : 'rounded-xl border border-gray-100 bg-white shadow-sm',
+    ]"
+  >
+    <div
+      v-if="lessons.length === 0"
+      class="px-6 py-16 text-center text-body3 text-gray-500"
+      role="status"
+    >
+      {{ emptyMessage }}
+    </div>
+    <table v-else class="w-full border-collapse text-left">
       <thead>
         <tr class="border-b border-gray-100 bg-gray-300">
           <th class="w-[48px] px-4 py-4"></th>

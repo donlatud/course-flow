@@ -291,13 +291,17 @@ async function handleCreateCourse() {
       courseDraftState.totalLearningTime || "0",
     );
 
+    const isPct = courseDraftState.promoDiscountType === "%";
+    const discountValueStr = isPct
+      ? courseDraftState.promoDiscountPercent
+      : courseDraftState.promoDiscountThb;
     const promoCode =
       courseDraftState.promoEnabled && courseDraftState.promoCode.trim()
         ? {
             code: courseDraftState.promoCode.trim(),
-            discountType: "PERCENTAGE",
-            discountValue: courseDraftState.promoDiscount
-              ? Number(courseDraftState.promoDiscount)
+            discountType: isPct ? "PERCENTAGE" : "FIXED_AMOUNT",
+            discountValue: discountValueStr
+              ? Number(discountValueStr)
               : 0,
             validFrom: courseDraftState.promoValidFrom || null,
             validUntil: courseDraftState.promoValidUntil || null,
@@ -408,7 +412,7 @@ async function handleCreateCourse() {
                   class="min-w-0 flex-1"
                   label="Total learning time *"
                   placeholder="e.g. 6"
-                  supporting-text="Total learning time in hours"
+                  supporting-text="Please enter numbers only"
                   :step="1"
                   :min="0"
                 />
@@ -432,7 +436,10 @@ async function handleCreateCourse() {
                 <PromoCard
                   v-if="courseDraftState.promoEnabled"
                   v-model:promo-code="courseDraftState.promoCode"
-                  v-model:discount="courseDraftState.promoDiscount"
+                  v-model:min-purchase="courseDraftState.promoMinPurchase"
+                  v-model:discount-type="courseDraftState.promoDiscountType"
+                  v-model:discount-thb="courseDraftState.promoDiscountThb"
+                  v-model:discount-percent="courseDraftState.promoDiscountPercent"
                   v-model:valid-from="courseDraftState.promoValidFrom"
                   v-model:valid-until="courseDraftState.promoValidUntil"
                 />

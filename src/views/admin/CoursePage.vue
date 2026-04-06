@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref } from "vue";
+import { computed, onMounted, ref } from "vue";
 import { Search } from "lucide-vue-next";
 import { useRouter } from "vue-router";
 import Table from "@/components/admin/CourseTable.vue";
@@ -13,6 +13,22 @@ const courses = ref<CourseItem[]>([]);
 const isLoading = ref(false);
 const errorMessage = ref<string | null>(null);
 const searchText = ref("");
+
+const filteredCourses = computed(() => {
+  const q = searchText.value.trim().toLowerCase();
+  if (!q) return courses.value;
+  return courses.value.filter((course) =>
+    course.name.toLowerCase().includes(q),
+  );
+});
+
+const courseTableEmptyMessage = computed(() => {
+  if (filteredCourses.value.length > 0) return "";
+  if (searchText.value.trim() && courses.value.length > 0) {
+    return "No courses match your search.";
+  }
+  return "No courses yet.";
+});
 
 function mapApiToCourseItem(apiItem: any): CourseItem {
   return {
@@ -111,11 +127,8 @@ onMounted(fetchCourses);
           </div>
           <Table
             v-else
-            :courses="
-              courses.filter((course) =>
-                course.name.toLowerCase().includes(searchText.toLowerCase()),
-              )
-            "
+            :courses="filteredCourses"
+            :empty-message="courseTableEmptyMessage"
             @edit="goToCourseEdit"
           />
         </div>

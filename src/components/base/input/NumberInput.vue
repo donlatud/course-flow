@@ -55,15 +55,15 @@ watch(
 </script>
 
 <template>
-  <div :class="cn('flex w-full flex-col gap-1', props.class)">
+  <div :class=" cn('flex w-full flex-col gap-1 ', props.class)">
     <label v-if="label" class="text-body3 font-medium text-gray-800">
       {{ label }}
     </label>
 
-    <div class="relative w-full">
+    <div class="relative w-full ">
       <BaseInput
         v-model="numericString"
-        type="text"
+        type="number"
         inputmode="decimal"
         autocomplete="off"
         :placeholder="placeholder ?? '0'"

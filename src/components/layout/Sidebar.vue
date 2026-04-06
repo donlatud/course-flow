@@ -26,7 +26,7 @@ const logout = () => {
 
 <template>
   <aside
-    class="fixed inset-y-0 left-0 z-40 flex h-screen w-[240px] flex-col overflow-y-auto border-r border-gray-200 bg-white"
+    class="sticky top-0 z-40 flex h-screen w-[240px] shrink-0 flex-col overflow-y-auto border-r border-gray-200 bg-white gap-10"
   >
     <div class="flex flex-col justify-center items-center gap-6 px-6 pt-10 pb-6">
       <svg
@@ -233,7 +233,7 @@ const logout = () => {
         </RouterLink>
       </div>
     </nav>
-    <div class="flex-grow flex items-end pb-6">
+    <div class="grow flex items-center pb-6">
       <button type="button" :class="menuButtonClass" @click="logout">
         <LogOut
           :size="24"

@@ -288,7 +288,7 @@ function confirmSaveLesson() {
 <template>
   <section class="flex min-h-screen flex-col bg-gray-100 max-w-[1920px]">
     <div
-      class="mx-auto flex h-[92px] w-full shrink-0 items-center justify-between gap-6 border-b border-gray-200 bg-white px-8"
+      class="mx-auto flex h-[92px] w-full shrink-0 items-center justify-between gap-6  bg-white px-8"
     >
       <div class="flex min-w-0 flex-1 items-center gap-4">
         <button
@@ -344,7 +344,7 @@ function confirmSaveLesson() {
       <!-- Lesson not found state -->
       <div
         v-if="notFound"
-        class="mx-auto flex w-full max-w-[1920px] flex-col items-center justify-center gap-4 rounded-3xl border border-[#E8E3F5] bg-white py-20 shadow-sm"
+        class="mx-auto flex w-full max-w-[1920px] flex-col items-center justify-center gap-4 bg-white py-20"
       >
         <p class="text-headline4 text-gray-500">Lesson not found.</p>
         <button
@@ -358,7 +358,7 @@ function confirmSaveLesson() {
 
       <div
         v-else
-        class="mx-auto w-full max-w-[1920px] rounded-3xl border border-[#E8E3F5] bg-white py-10 px-25 shadow-sm"
+        class="mx-auto w-full max-w-[1920px] rounded-3xl bg-white py-10 px-25 "
       >
         <div class="mx-auto flex w-full max-w-[920px] flex-col gap-10">
           <div id="lesson-name-field">
