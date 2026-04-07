@@ -3,13 +3,11 @@ import { computed, ref, watch } from "vue"
 import { useRoute, useRouter } from "vue-router"
 import Navbar from "@/components/shared/Navbar.vue"
 import AppFooter from "@/components/shared/AppFooter.vue"
-import PrimaryButton from "@/components/base/button/PrimaryButton.vue"
 import GhostButton from "@/components/base/button/GhostButton.vue"
-import CustomInput from "@/components/base/input/CustomInput.vue"
+import PaymentMethodSelector from "@/components/payment/PaymentMethodSelector.vue"
+import OrderSummary from "@/components/payment/OrderSummary.vue"
 import { courseService } from "@/services/courseService"
 import type { Course } from "@/types/course"
-import visaCard from "@/assets/icon-card-visa.svg"
-import masterCard from "@/assets/icon-card-mastercard.svg"
 
 const route = useRoute()
 const router = useRouter()
@@ -22,6 +20,7 @@ const cvv = ref("")
 const promoCode = ref("")
 const selectedPaymentMethod = ref<"card" | "qr">("card")
 const isPromoApplied = ref(false)
+const submitted = ref(false)
 // Mock promo codes for the initial frontend flow; replace with API-driven validation later.
 const mockPromoDiscounts: Record<string, number> = {
   NEWYEAR200: 200,
@@ -66,6 +65,80 @@ const formattedTotal = computed(() =>
   }),
 )
 const isPromoCodeValid = computed(() => matchedPromoDiscount.value > 0)
+const normalizedCardNumber = computed(() => cardNumber.value.replace(/\D/g, ""))
+const normalizedNameOnCard = computed(() => nameOnCard.value.trim().replace(/\s+/g, " "))
+const normalizedCvv = computed(() => cvv.value.replace(/\D/g, ""))
+const isCardNumberValid = computed(() => {
+  const digits = normalizedCardNumber.value
+
+  return digits.length >= 13 && digits.length <= 19
+})
+const isNameOnCardValid = computed(() => {
+  const name = normalizedNameOnCard.value
+
+  return name.length >= 2 && /^[A-Za-z]+(?:[ '.-][A-Za-z]+)*$/.test(name)
+})
+const isExpiryDateValid = computed(() => {
+  const match = expiryDate.value.match(/^(\d{2})\/(\d{2})$/)
+
+  if (!match) return false
+
+  const month = Number(match[1])
+  const year = Number(match[2])
+
+  if (month < 1 || month > 12) return false
+
+  const now = new Date()
+  const currentYear = now.getFullYear() % 100
+  const currentMonth = now.getMonth() + 1
+
+  return year > currentYear || (year === currentYear && month >= currentMonth)
+})
+const isCvvValid = computed(() => /^\d{3,4}$/.test(normalizedCvv.value))
+const shouldShowCardErrors = computed(
+  () => selectedPaymentMethod.value === "card" && submitted.value,
+)
+const hasCardNumberError = computed(
+  () => shouldShowCardErrors.value && (!normalizedCardNumber.value || !isCardNumberValid.value),
+)
+const hasNameOnCardError = computed(
+  () => shouldShowCardErrors.value && (!normalizedNameOnCard.value || !isNameOnCardValid.value),
+)
+const hasExpiryDateError = computed(
+  () => shouldShowCardErrors.value && (!expiryDate.value || !isExpiryDateValid.value),
+)
+const hasCvvError = computed(
+  () => shouldShowCardErrors.value && (!normalizedCvv.value || !isCvvValid.value),
+)
+const cardNumberErrorMessage = computed(() => {
+  if (!hasCardNumberError.value) return ""
+  if (!normalizedCardNumber.value) return "Please enter your card number"
+  return "Please enter a valid card number"
+})
+const nameOnCardErrorMessage = computed(() => {
+  if (!hasNameOnCardError.value) return ""
+  if (!normalizedNameOnCard.value) return "Please enter your name on card"
+  return "Please enter the name shown on your card"
+})
+const expiryDateErrorMessage = computed(() => {
+  if (!hasExpiryDateError.value) return ""
+  if (!expiryDate.value) return "Please enter your expiry date"
+  return "Please enter a valid expiry date"
+})
+const cvvErrorMessage = computed(() => {
+  if (!hasCvvError.value) return ""
+  if (!normalizedCvv.value) return "Please enter your CVV"
+  return "Please enter a valid CVV"
+})
+const isCardFormValid = computed(() =>
+  isCardNumberValid.value &&
+  isNameOnCardValid.value &&
+  isExpiryDateValid.value &&
+  isCvvValid.value,
+)
+const isPlaceOrderDisabled = computed(() =>
+  loading.value || (selectedPaymentMethod.value === "card" && !isCardFormValid.value),
+)
 
 const loadCourse = async (id: string) => {
   if (!id) return
@@ -87,12 +160,61 @@ const goBack = () => {
   router.back()
 }
 
+const resetValidation = () => {
+  submitted.value = false
+}
+
 const selectPaymentMethod = (method: "card" | "qr") => {
+  resetValidation()
   selectedPaymentMethod.value = method
+}
+
+const updateCardNumber = (value: string) => {
+  resetValidation()
+  const digits = value.replace(/\D/g, "").slice(0, 19)
+  const groupedDigits = digits.match(/.{1,4}/g)
+
+  cardNumber.value = groupedDigits?.join(" ") ?? ""
+}
+
+const updateNameOnCard = (value: string) => {
+  resetValidation()
+  nameOnCard.value = value
+}
+
+const updateExpiryDate = (value: string) => {
+  resetValidation()
+  const digits = value.replace(/\D/g, "").slice(0, 4)
+
+  expiryDate.value = digits.length > 2 ? `${digits.slice(0, 2)}/${digits.slice(2)}` : digits
+}
+
+const updateCvv = (value: string) => {
+  resetValidation()
+  cvv.value = value.replace(/\D/g, "").slice(0, 4)
 }
 
 const applyPromoCode = () => {
   isPromoApplied.value = isPromoCodeValid.value
+}
+
+const attemptPlaceOrder = () => {
+  submitted.value = true
+}
+
+const placeOrder = () => {
+  submitted.value = true
+
+  if (isPlaceOrderDisabled.value) return
+
+  // Mock checkout outcome for the current frontend-only flow.
+  const targetRoute =
+    selectedPaymentMethod.value === "card" ? "payment-completed" : "payment-failed"
+
+  router.push({
+    name: targetRoute,
+    params: { courseId: courseId.value },
+  })
 }
 </script>
 
@@ -102,177 +224,58 @@ const applyPromoCode = () => {
 
     <main class="flex-1 pt-6 pb-10 lg:px-10 lg:pt-12 lg:pb-60 xl:px-40">
       <div class="mx-auto w-full max-w-[375px] px-4 lg:max-w-[1120px] lg:px-0">
-        <GhostButton class="mb-4 w-auto! h-auto! inline-flex items-center gap-2 cursor-pointer py-1 px-2" @click="goBack">
-            <span aria-hidden="true">&larr;</span>
-            <span>Back</span>
+        <GhostButton class="mb-4 w-auto! h-auto! inline-flex items-center gap-2 cursor-pointer py-1 px-2"
+          @click="goBack">
+          <span aria-hidden="true">&larr;</span>
+          <span>Back</span>
         </GhostButton>
 
         <div class="flex flex-col gap-8 lg:flex-row lg:items-start lg:gap-10">
           <div class="flex flex-col gap-8 lg:w-[739px] lg:flex-none lg:gap-12">
             <div class="max-w-[739px]">
-              <h1 class="text-headline3 lg:text-headline2 text-utility-black">
+              <h1 class="text-headline3 lg:text-headline2 text-black">
                 Enter payment info to start <br> your subscription
               </h1>
             </div>
 
-            <section>
-              <p class="mb-4 text-body3 text-gray-700">Select payment method</p>
-
-              <div
-                :class="[
-                  'rounded-[8px] p-4 lg:p-8',
-                  selectedPaymentMethod === 'card' ? 'bg-gray-200' : 'bg-transparent',
-                ]"
-              >
-                <button
-                  type="button"
-                  class="mb-6 flex items-center gap-3 text-body2 text-gray-900 cursor-pointer"
-                  @click="selectPaymentMethod('card')"
-                >
-                  <span
-                    :class="[
-                      'flex h-5 w-5 items-center justify-center rounded-full border-2',
-                      selectedPaymentMethod === 'card' ? 'border-blue-500' : 'border-black',
-                    ]"
-                  >
-                    <span
-                      v-if="selectedPaymentMethod === 'card'"
-                      class="h-2.5 w-2.5 rounded-full bg-blue-500"
-                    />
-                  </span>
-                  <span>Credit card / Debit card</span>
-                </button>
-
-                <div class="space-y-5 lg:pl-8">
-                  <div class="lg:max-w-[611px] lg:flex lg:flex-row lg:gap-4">
-                    <div class="lg:max-w-[453px] lg:flex lg:flex-col">
-                    <p class="mb-2 text-body2 text-black">Card number</p>
-                    <CustomInput
-                      v-model="cardNumber"
-                      placeholder="Card number"
-                      class="lg:w-[453px]"
-                    />
-                    </div>
-                    <div class="lg:mt-8 flex items-center gap-2">
-                      <img :src="visaCard" alt="Visa" class="h-12 w-12 object-contain" />
-                      <img
-                        :src="masterCard"
-                        alt="Mastercard"
-                        class="h-12 w-12 object-contain"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <p class="mb-2 text-body2 text-black">Name on card</p>
-                    <CustomInput
-                      v-model="nameOnCard"
-                      placeholder="Name on card"
-                      class="lg:w-[453px]"
-                    />
-                  </div>
-
-                  <div class="grid grid-cols-2 gap-4 lg:w-[453px]">
-                    <div>
-                      <p class="mb-2 text-body2 text-black">Expiry date</p>
-                      <CustomInput
-                        v-model="expiryDate"
-                        placeholder="MM/YY"
-                      />
-                    </div>
-
-                    <div>
-                      <p class="mb-2 text-body2 text-black">CVV</p>
-                      <CustomInput
-                        v-model="cvv"
-                        placeholder="CVV"
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <button
-                type="button"
-                :class="[
-                  'mt-6 flex w-full items-center gap-3 rounded-[8px] px-4 py-4 text-left text-body2 text-gray-900 cursor-pointer lg:px-8',
-                  selectedPaymentMethod === 'qr' ? 'bg-gray-200' : 'bg-transparent',
-                ]"
-                @click="selectPaymentMethod('qr')"
-              >
-                <span
-                  :class="[
-                    'flex h-5 w-5 items-center justify-center rounded-full border-2',
-                    selectedPaymentMethod === 'qr' ? 'border-blue-500' : 'border-black',
-                  ]"
-                >
-                  <span
-                    v-if="selectedPaymentMethod === 'qr'"
-                    class="h-2.5 w-2.5 rounded-full bg-blue-500"
-                  />
-                </span>
-                <span>QR Payment</span>
-              </button>
-            </section>
+            <PaymentMethodSelector
+              :card-number="cardNumber"
+              :name-on-card="nameOnCard"
+              :expiry-date="expiryDate"
+              :cvv="cvv"
+              :card-number-error="hasCardNumberError"
+              :card-number-error-message="cardNumberErrorMessage"
+              :name-on-card-error="hasNameOnCardError"
+              :name-on-card-error-message="nameOnCardErrorMessage"
+              :expiry-date-error="hasExpiryDateError"
+              :expiry-date-error-message="expiryDateErrorMessage"
+              :cvv-error="hasCvvError"
+              :cvv-error-message="cvvErrorMessage"
+              :selected-payment-method="selectedPaymentMethod"
+              @update:card-number="updateCardNumber"
+              @update:name-on-card="updateNameOnCard"
+              @update:expiry-date="updateExpiryDate"
+              @update:cvv="updateCvv"
+              @select-payment-method="selectPaymentMethod"
+            />
           </div>
 
-          <aside class="w-full lg:mt-[175px] lg:max-w-[357px]">
-            <div class="rounded-[8px] bg-white py-8 px-6 shadow-1">
-              <p class="mb-4 text-body3 font-medium text-orange-500">Summary</p>
-              <p class="mb-1 text-body4 lg:text-body2 text-gray-700">
-                Subscription
-              </p>
-              <h2 class="mb-6 text-headline3 text-black">
-                {{ courseTitle }}
-              </h2>
-
-              <div class="mb-5 flex items-center gap-2">
-                <CustomInput
-                  v-model="promoCode"
-                  placeholder="Promo code"
-                  class="min-w-0 flex-1"
-                />
-                <PrimaryButton
-                  class="h-12! w-22! rounded-3! px-4!"
-                  :disabled="!isPromoCodeValid"
-                  @click="applyPromoCode"
-                >
-                  Apply
-                </PrimaryButton>
-              </div>
-
-              <div class="space-y-3 text-body2 text-gray-900">
-                <div class="flex items-start justify-between gap-2">
-                  <span>Subtotal</span>
-                  <span>{{ formattedSubtotal }}</span>
-                </div>
-                <div
-                  v-if="isPromoApplied"
-                  class="flex items-start justify-between gap-2"
-                >
-                  <span>Discount</span>
-                  <span class="text-purple">-{{ formattedDiscount }}</span>
-                </div>
-                <div class="flex items-start justify-between gap-2">
-                  <span>Payment method</span>
-                  <span class="max-w-[145px] text-right text-gray-700">
-                    {{ paymentMethodLabel }}
-                  </span>
-                </div>
-              </div>
-
-              <div class="mb-6 mt-4 flex items-end justify-between gap-2">
-                <span class="text-body2 text-black">Total</span>
-                <span class="text-headline3 text-gray-700">
-                  THB {{ formattedTotal }}
-                </span>
-              </div>
-
-              <PrimaryButton class="h-14! w-full! rounded-[12px]!" :disabled="loading">
-                Place order
-              </PrimaryButton>
-            </div>
-          </aside>
+          <OrderSummary
+            :course-title="courseTitle"
+            :promo-code="promoCode"
+            :formatted-subtotal="formattedSubtotal"
+            :formatted-discount="formattedDiscount"
+            :formatted-total="formattedTotal"
+            :payment-method-label="paymentMethodLabel"
+            :is-promo-applied="isPromoApplied"
+            :is-promo-code-valid="isPromoCodeValid"
+            :loading="loading"
+            :place-order-disabled="isPlaceOrderDisabled"
+            @update:promo-code="promoCode = $event"
+            @apply-promo="applyPromoCode"
+            @attempt-place-order="attemptPlaceOrder"
+            @place-order="placeOrder"
+          />
         </div>
       </div>
     </main>
