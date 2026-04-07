@@ -12,6 +12,8 @@ import CourseLearningPage from "@/views/CourseLearningPage.vue";
 import LessonEditPage from "@/views/admin/LessonEditPage.vue";
 import CourseEditPage from "@/views/admin/CourseEditPage.vue";
 import CheckoutView from "@/views/payment/CheckoutView.vue";
+import CompletedView from "@/views/payment/CompletedView.vue";
+import FailedView from "@/views/payment/FailedView.vue";
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -38,8 +40,18 @@ const router = createRouter({
     },
     {
       path: "/courses/:courseId/checkout",
-      name: "checkout",
+      name: "payment-checkout",
       component: CheckoutView,
+    },
+    {
+      path: "/courses/:courseId/payment-completed",
+      name: "payment-completed",
+      component: CompletedView,
+    },
+    {
+      path: "/courses/:courseId/payment-failed",
+      name: "payment-failed",
+      component: FailedView,
     },
     { path: "/register", name: "register", component: RegisterView },
     { path: "/login", name: "login", component: LoginView },
