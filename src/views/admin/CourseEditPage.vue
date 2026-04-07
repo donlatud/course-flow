@@ -219,10 +219,20 @@ function validatePayload() {
     return false;
   }
 
-  if (!courseDraftState.totalLearningTime.trim()) {
+  const totalLearningStr = String(
+    courseDraftState.totalLearningTime ?? "",
+  ).trim();
+  if (!totalLearningStr || !Number.isFinite(Number(totalLearningStr))) {
     appToast.error(
       "Total learning time is required",
       "Please enter total learning time in hours.",
+    );
+    return false;
+  }
+  if (Number(totalLearningStr) < 1) {
+    appToast.error(
+      "Total learning time",
+      "Enter at least 1 hour.",
     );
     return false;
   }

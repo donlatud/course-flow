@@ -24,31 +24,32 @@ const emit = defineEmits<{
 }>();
 
 const internalValue = useVModel(props, "modelValue", emit, {
-  passive: true,
+  passive: false,
   defaultValue: props.defaultValue ?? "",
 });
 
 const isFocused = ref(false);
+
+function toCleanedNumericString(raw: unknown): string {
+  // Vue may pass a number from <input type="number">; never call .replace on a number.
+  return String(raw ?? "").replace(/[^\d.]/g, "");
+}
 
 const numericString = computed<string>({
   get() {
     return String(internalValue.value ?? "");
   },
   set(raw) {
-    const cleaned = raw.replace(/[^\d.]/g, "");
-    internalValue.value = cleaned;
+    internalValue.value = toCleanedNumericString(raw);
   },
 });
 
 watch(
   () => internalValue.value,
   (val) => {
-    // ensure stored value never has non-numeric characters
-    if (typeof val === "string") {
-      const cleaned = val.replace(/[^\d.]/g, "");
-      if (cleaned !== val) {
-        internalValue.value = cleaned;
-      }
+    const cleaned = toCleanedNumericString(val);
+    if (cleaned !== String(val ?? "")) {
+      internalValue.value = cleaned;
     }
   },
 );

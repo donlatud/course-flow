@@ -8,9 +8,12 @@ withDefaults(
     courses: CourseItem[];
     /** Shown when there are no rows (header is hidden). */
     emptyMessage?: string;
+    /** Global index before first row (e.g. (page − 1) × pageSize → page 2 starts at 11). */
+    rowOffset?: number;
   }>(),
   {
     emptyMessage: "No courses yet.",
+    rowOffset: 0,
   },
 );
 
@@ -58,8 +61,8 @@ const emit = defineEmits<{
             index % 2 === 0 ? 'bg-white' : 'bg-gray-50/60',
           ]"
         >
-          <td class="px-6 py-4 text-sm text-slate-600">
-            {{ index + 1 }}
+          <td class="px-4 py-4 text-sm tabular-nums text-slate-600">
+            {{ rowOffset + index + 1 }}
           </td>
           <td class="px-6 py-1">
             <img

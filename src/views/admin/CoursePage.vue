@@ -1,30 +1,58 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from "vue";
+import { computed, ref, watch } from "vue";
 import { Search } from "lucide-vue-next";
 import { useRouter } from "vue-router";
 import Table from "@/components/admin/CourseTable.vue";
 import { api } from "@/lib/api";
 import type { CourseItem } from "@/types/admin-course";
 import { resetCourseDraft } from "@/views/admin/course-create.state";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
 
 const router = useRouter();
 
+const PAGE_SIZE = 10;
+const currentPage = ref(1);
+
 const courses = ref<CourseItem[]>([]);
+const totalElements = ref(0);
+console.log(courses);
+const serverTotalPages = ref(0);
 const isLoading = ref(false);
 const errorMessage = ref<string | null>(null);
 const searchText = ref("");
 
-const filteredCourses = computed(() => {
-  const q = searchText.value.trim().toLowerCase();
-  if (!q) return courses.value;
-  return courses.value.filter((course) =>
-    course.name.toLowerCase().includes(q),
-  );
-});
+watch(
+  searchText,
+  () => {
+    currentPage.value = 1;
+  },
+  { flush: "sync" },
+);
+
+watch(
+  [currentPage, searchText],
+  () => {
+    void fetchCourses();
+  },
+  { immediate: true },
+);
+
+const rowOffset = computed(() => (currentPage.value - 1) * PAGE_SIZE);
+
+const showPagination = computed(
+  () => !isLoading.value && !errorMessage.value && serverTotalPages.value > 1,
+);
 
 const courseTableEmptyMessage = computed(() => {
-  if (filteredCourses.value.length > 0) return "";
-  if (searchText.value.trim() && courses.value.length > 0) {
+  if (courses.value.length > 0) return "";
+  if (searchText.value.trim()) {
     return "No courses match your search.";
   }
   return "No courses yet.";
@@ -54,12 +82,36 @@ async function fetchCourses() {
   try {
     isLoading.value = true;
     errorMessage.value = null;
-    const response = await api.get("/api/admin/courses");
-    courses.value = (response.data as any[]).map(mapApiToCourseItem);
-  } catch (error: any) {
+    const pageZeroBased = currentPage.value - 1;
+    const params: Record<string, string | number> = {
+      page: pageZeroBased,
+      size: PAGE_SIZE,
+    };
+    const q = searchText.value.trim();
+    if (q) {
+      params.title = q;
+    }
+    const { data } = await api.get("/api/admin/courses", { params });
+    const body = data as {
+      content: any[];
+      totalElements: number;
+      totalPages: number;
+    };
+    const tp = body.totalPages ?? 0;
+    const te = body.totalElements ?? 0;
+    serverTotalPages.value = tp;
+    totalElements.value = te;
+
+    if (tp > 0 && currentPage.value > tp) {
+      currentPage.value = tp;
+    }
+
+    courses.value = (body.content ?? []).map(mapApiToCourseItem);
+  } catch (error: unknown) {
     console.error(error);
+    const err = error as { response?: { data?: { message?: string } } };
     errorMessage.value =
-      error?.response?.data?.message ?? "Failed to load courses.";
+      err?.response?.data?.message ?? "Failed to load courses.";
   } finally {
     isLoading.value = false;
   }
@@ -74,8 +126,6 @@ function goToCourseEdit(courseId: string) {
   resetCourseDraft();
   router.push({ name: "admin-course-edit", params: { courseId } });
 }
-
-onMounted(fetchCourses);
 </script>
 
 <template>
@@ -127,10 +177,53 @@ onMounted(fetchCourses);
           </div>
           <Table
             v-else
-            :courses="filteredCourses"
+            :courses="courses"
+            :row-offset="rowOffset"
             :empty-message="courseTableEmptyMessage"
             @edit="goToCourseEdit"
           />
+
+          <div
+            v-if="showPagination"
+            class="mt-8 flex w-full flex-wrap items-center justify-center gap-2 px-4 py-3 pb-10"
+          >
+            <Pagination
+              v-model:page="currentPage"
+              :total="totalElements"
+              :items-per-page="PAGE_SIZE"
+              :sibling-count="1"
+              :show-edges="true"
+              class="justify-center"
+            >
+              <PaginationContent v-slot="{ items }" class="flex-wrap justify-center">
+                <PaginationPrevious class="shrink-0 cursor-pointer" />
+
+                <template
+                  v-for="(item, idx) in items"
+                  :key="
+                    item.type === 'page'
+                      ? item.value
+                      : `ellipsis-${idx}`
+                  "
+                >
+                  <PaginationItem
+                    v-if="item.type === 'page'"
+                    class="cursor-pointer"
+                    :value="item.value"
+                    :is-active="item.value === currentPage"
+                  >
+                    {{ item.value }}
+                  </PaginationItem>
+                  <PaginationEllipsis
+                    v-else-if="item.type === 'ellipsis'"
+                    class="shrink-0 cursor-pointer"
+                  />
+                </template>
+
+                <PaginationNext class="shrink-0 cursor-pointer" />
+              </PaginationContent>
+            </Pagination>
+          </div>
         </div>
       </div>
     </section>
