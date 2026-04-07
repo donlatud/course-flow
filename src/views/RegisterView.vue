@@ -19,6 +19,7 @@ const password = ref("");
 const confirmPassword = ref("");
 const errorMessage = ref("");
 const submitted = ref(false);
+const isError = ref(false);
 
 const passwordMismatch = computed(
   () => submitted.value && confirmPassword.value !== password.value,
@@ -26,6 +27,8 @@ const passwordMismatch = computed(
 
 const handleRegister = async () => {
   submitted.value = true;
+  isError.value = false;
+  errorMessage.value = "";
 
   if (
     !name.value ||
@@ -53,20 +56,24 @@ const handleRegister = async () => {
 
     await login(email.value, password.value);
   } catch (error: any) {
-    errorMessage.value = "Register failed. Please try again.";
+    if (error?.response?.status === 409) {
+      isError.value = true;
+      errorMessage.value = "This email is already registered. Please log in.";
+    } else {
+      errorMessage.value = "Register failed. Please try again.";
+    }
   }
 };
 
 const resetError = () => {
   submitted.value = false;
+  isError.value = false;
   errorMessage.value = "";
 };
 </script>
 
 <template>
-  <div
-    class="relative min-h-screen w-full bg-white flex flex-col"
-  >
+  <div class="relative min-h-screen w-full bg-white flex flex-col">
     <!-- Background images -->
     <div class="absolute inset-0 pointer-events-none z-0">
       <img
@@ -142,7 +149,9 @@ const resetError = () => {
             placeholder="Enter Email"
             label="Email"
             :error="submitted && !email"
-            :error-message="submitted && !email ? 'Please enter your email' : ''"
+            :error-message="
+              submitted && !email ? 'Please enter your email' : ''
+            "
             :submitted="submitted"
             @input="resetError"
           />
@@ -171,6 +180,22 @@ const resetError = () => {
             :error-message="passwordMismatch ? 'Passwords do not match' : ''"
             @input="resetError"
           />
+
+         <div
+            v-if="isError"
+            class="flex items-start gap-3 px-4 py-3 rounded-[10px] bg-purple/20 my-5"
+          >
+            <span
+              class="mt-0.5 shrink-0 flex items-center justify-center
+                     w-6 h-6 rounded-full bg-(--color-purple)
+                     text-white text-[14px] font-bold select-none pointer-events-none z-10"
+            >
+              !
+            </span>
+            <p class="text-body3 text-purple">
+              {{ errorMessage }}
+            </p>
+          </div>
 
           <!-- Register button -->
           <PrimaryButton

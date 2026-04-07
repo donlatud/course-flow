@@ -15,6 +15,7 @@ import CheckoutView from "@/views/payment/CheckoutView.vue";
 import CompletedView from "@/views/payment/CompletedView.vue";
 import FailedView from "@/views/payment/FailedView.vue";
 import MyCoursesView from "@/views/MyCoursesView.vue";
+import ProfileView from "@/views/ProfileView.vue";
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -57,6 +58,7 @@ const router = createRouter({
     { path: "/register", name: "register", component: RegisterView },
     { path: "/login", name: "login", component: LoginView },
     { path: "/my-courses", name: "my-courses", component: MyCoursesView },
+    { path: "/profile", name: "profile", component: ProfileView },
     {
       path: "/admin/course",
       name: "admin-course",
