@@ -3,6 +3,7 @@ import type { User } from "@supabase/supabase-js"
 import { supabase } from "@/lib/supabase"
 import { useRouter } from "vue-router"
 import { api } from "@/lib/api"
+import { clearAdminAccessTokenFallback } from "@/lib/adminSession"
 // ใช้ตรวจ path หลัง login — ค่ามาจาก LoginView (?redirect=) ต้องผ่านก่อน router.push
 import { sanitizeInternalRedirect } from "@/lib/authRedirect"
 
@@ -58,6 +59,7 @@ export const useAuth = () => {
     try {
       const { data, error: err } = await supabase.auth.signUp({ email, password })
       if (err) throw err
+      clearAdminAccessTokenFallback()
       user.value = data.user
       router.push("/")
     } catch (err: any) {
@@ -78,6 +80,7 @@ export const useAuth = () => {
     try {
       const { data, error: err } = await supabase.auth.signInWithPassword({ email, password })
       if (err) throw err
+      clearAdminAccessTokenFallback()
       user.value = data.user
       const safe = sanitizeInternalRedirect(redirectAfter)
       router.push(safe ?? "/")
@@ -89,6 +92,7 @@ export const useAuth = () => {
   }
 
   const logout = async () => {
+    clearAdminAccessTokenFallback()
     await supabase.auth.signOut()
     user.value = null
     router.push("/login")

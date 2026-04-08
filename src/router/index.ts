@@ -18,6 +18,10 @@ import MyCoursesView from "@/views/MyCoursesView.vue";
 import ProfileView from "@/views/ProfileView.vue";
 import MyAssignmentsView from "@/views/MyAssignmentsView.vue";
 import CourseAssignmentsView from "@/views/CourseAssignmentsView.vue";
+import { api } from "@/lib/api";
+import { hasApiAuthToken } from "@/lib/adminSession";
+
+const ADMIN_LOGIN_PATH = "/admin/login";
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -106,6 +110,28 @@ const router = createRouter({
     if (savedPosition) return savedPosition;
     return { top: 0, left: 0, behavior: "smooth" };
   },
+});
+
+router.beforeEach(async (to) => {
+  const inAdminArea = to.path.startsWith("/admin");
+  if (!inAdminArea || to.path === ADMIN_LOGIN_PATH) {
+    return true;
+  }
+
+  if (!(await hasApiAuthToken())) {
+    return { path: ADMIN_LOGIN_PATH, query: { redirect: to.fullPath } };
+  }
+
+  try {
+    const { data: me } = await api.get<{ role: string }>("/api/users/me");
+    if (me.role !== "ADMIN") {
+      return { path: "/", replace: true };
+    }
+  } catch {
+    return { path: ADMIN_LOGIN_PATH, query: { redirect: to.fullPath } };
+  }
+
+  return true;
 });
 
 export default router;

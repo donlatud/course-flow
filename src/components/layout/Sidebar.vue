@@ -6,6 +6,8 @@ import {
   LogOut,
   TicketPercent,
 } from "lucide-vue-next";
+import { supabase } from "@/lib/supabase";
+import { clearAdminAccessTokenFallback } from "@/lib/adminSession";
 
 const route = useRoute();
 const router = useRouter();
@@ -18,8 +20,9 @@ const isActive = (path: string) => route.path === path;
 const isCourseSection = () =>
   route.path === "/admin/course" || route.path.startsWith("/admin/course/");
 
-const logout = () => {
-  localStorage.removeItem("admin_user_id");
+const logout = async () => {
+  clearAdminAccessTokenFallback();
+  await supabase.auth.signOut();
   router.push("/admin/login");
 };
 </script>
