@@ -1,45 +1,53 @@
 <script setup lang="ts">
-import { ref } from "vue"
-import { RouterLink } from "vue-router"
-import Navbar from "@/components/shared/Navbar.vue"
-import CustomInput from "@/components/base/input/CustomInput.vue"
-import PrimaryButton from "@/components/base/button/PrimaryButton.vue"
-import GhostButton from "@/components/base/button/GhostButton.vue"
-import { useAuth } from "@/composables/useAuth"
+import { ref } from "vue";
+import { RouterLink } from "vue-router";
+import Navbar from "@/components/shared/Navbar.vue";
+import CustomInput from "@/components/base/input/CustomInput.vue";
+import PrimaryButton from "@/components/base/button/PrimaryButton.vue";
+import GhostButton from "@/components/base/button/GhostButton.vue";
+import { useAuth } from "@/composables/useAuth";
+import { appToast } from "@/components/base/toast";
 
-const { login, error } = useAuth()
+const { login, error } = useAuth();
 
-const email = ref("")
-const password = ref("")
-const errorMessage = ref("")
-const isError = ref(false)
-const submitted = ref(false)
+const email = ref("");
+const password = ref("");
+const errorMessage = ref("");
+const isError = ref(false);
+const submitted = ref(false);
 
 const handleLogin = async () => {
-  submitted.value = true
-  isError.value = false
-  errorMessage.value = ""
+  submitted.value = true;
+  isError.value = false;
+  errorMessage.value = "";
 
-  if (!email.value || !password.value) return
+  if (!email.value || !password.value) return;
 
-  await login(email.value, password.value)
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email.value)) return;
+
+  await login(email.value, password.value);
 
   if (error.value) {
-    isError.value = true
-    errorMessage.value = "Login failed. Please ensure your email and password are correct"
+    isError.value = true;
+    errorMessage.value =
+      "Login failed. Please ensure your email and password are correct";
+  } else {
+    appToast.success("Login successful", "Welcome back!");
   }
-}
+};
 
 const resetError = () => {
-  submitted.value = false
-  isError.value = false
-  errorMessage.value = ""
-}
+  submitted.value = false;
+  isError.value = false;
+  errorMessage.value = "";
+};
 </script>
 
 <template>
-  <div class="relative min-h-screen w-full bg-white overflow-hidden flex flex-col">
-
+  <div
+    class="relative min-h-screen w-full bg-white overflow-hidden flex flex-col"
+  >
     <!-- Background images -->
     <div class="absolute inset-0 pointer-events-none z-0">
       <img
@@ -58,19 +66,21 @@ const resetError = () => {
       <Navbar />
     </div>
 
-    <main class="relative z-10 flex-1 flex items-start lg:items-center justify-center px-4 pt-9 pb-12">
+    <main
+      class="relative z-10 flex-1 flex items-start lg:items-center justify-center px-4 pt-9 pb-12"
+    >
       <div class="w-full max-w-113.25 flex flex-col">
-
         <!-- Heading -->
         <div class="mb-6">
-          <p class="text-headline3 md:text-headline2 text-blue-500 leading-tight">
+          <p
+            class="text-headline3 md:text-headline2 text-blue-500 leading-tight"
+          >
             Welcome back!
           </p>
         </div>
 
         <!-- Form -->
         <div class="flex flex-col gap-4">
-
           <!-- Email -->
           <CustomInput
             v-model="email"
@@ -78,7 +88,9 @@ const resetError = () => {
             placeholder="Enter Email"
             label="Email"
             :error="isError || (submitted && !email)"
-            :error-message="submitted && !email ? 'Please enter your email' : ''"
+            :error-message="
+              submitted && !email ? 'Please enter your email' : ''
+            "
             :submitted="submitted"
             @input="resetError"
           />
@@ -90,7 +102,9 @@ const resetError = () => {
             placeholder="Enter password"
             label="Password"
             :error="isError || (submitted && !password)"
-            :error-message="submitted && !password ? 'Please enter your password' : ''"
+            :error-message="
+              submitted && !password ? 'Please enter your password' : ''
+            "
             @input="resetError"
           />
 
@@ -100,9 +114,7 @@ const resetError = () => {
             class="flex items-start gap-3 px-4 py-3 rounded-[10px] bg-purple/20 my-5"
           >
             <span
-              class="mt-0.5 shrink-0 flex items-center justify-center
-                     w-6 h-6 rounded-full bg-(--color-purple)
-                     text-white text-[14px] font-bold select-none pointer-events-none z-10"
+              class="mt-0.5 shrink-0 flex items-center justify-center w-6 h-6 rounded-full bg-(--color-purple) text-white text-[14px] font-bold select-none pointer-events-none z-10"
             >
               !
             </span>
@@ -126,7 +138,6 @@ const resetError = () => {
               <GhostButton>Register</GhostButton>
             </RouterLink>
           </p>
-
         </div>
       </div>
     </main>
