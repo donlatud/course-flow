@@ -10,6 +10,10 @@ import type {
 } from "@/types/course-learning/course-learning-api"
 import { useOfflineQueue } from "./useOfflineQueue"
 
+function isMockCourseLearning(): boolean {
+  return import.meta.env.VITE_MOCK_COURSE_LEARNING === "true"
+}
+
 type SaveReason = "interval" | "pause" | "ended" | "seeked"
 
 export type UseVideoProgressOptions = {
@@ -101,6 +105,14 @@ export function useVideoProgress(options: UseVideoProgressOptions) {
 
     ensureInFlight = (async () => {
       try {
+        if (isMockCourseLearning()) {
+          progressId.value = `mock-${materialId.value}`
+          status.value = initialStatus
+          const fromInitial = initialResumeSeconds.value ?? 0
+          lastSavedPosition.value = fromInitial
+          return progressId.value
+        }
+
         const res = (await createMaterialProgress({
           enrollmentId: enrollmentId.value!,
           materialId: materialId.value!,
@@ -140,6 +152,12 @@ export function useVideoProgress(options: UseVideoProgressOptions) {
 
       const nextStatus: MaterialProgressStatus =
         reason === "ended" ? "COMPLETED" : "IN_PROGRESS"
+
+      if (isMockCourseLearning()) {
+        status.value = nextStatus
+        lastSavedPosition.value = pos
+        return
+      }
 
       const payload = {
         status: nextStatus,

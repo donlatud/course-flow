@@ -18,6 +18,10 @@ import {
   mapCourseLearningDtoToModules,
   progressModelValueFromDto,
 } from "@/utils/course-learning/mapCourseLearningToSidebar"
+import {
+  buildMockAssignments,
+  buildMockCourseLearningDto,
+} from "@/mocks/courseLearningDemo"
 import { toast } from "vue-sonner"
 import { useOfflineQueue } from "@/composables/useOfflineQueue"
 
@@ -54,6 +58,9 @@ export function createCourseLearningStore() {
   const submittedAnswerText = ref<string>("")
 
   const { addToQueue, isOnline } = useOfflineQueue()
+
+  /** When true, skip learning/assignment API calls (demo / sprint review). */
+  const mockCourseLearningEnabled = ref(false)
 
   const flatLessons = computed<Lesson[]>(() => modules.value.flatMap((m) => m.lessons))
 
@@ -183,6 +190,17 @@ export function createCourseLearningStore() {
     const enr = enrollmentId.value
     if (!mat || !enr) return true
 
+    if (mockCourseLearningEnabled.value) {
+      if (mat.completed) return true
+      if (mat.fileType !== "PDF" && mat.fileType !== "IMAGE") return true
+      patchMaterialInStore(mat.materialId, {
+        completed: true,
+        status: "COMPLETED",
+        lastPosition: mat.lastPosition ?? 0,
+      })
+      return true
+    }
+
     if (mat.completed) return true
     if (mat.fileType !== "PDF" && mat.fileType !== "IMAGE") return true
 
@@ -279,6 +297,7 @@ export function createCourseLearningStore() {
 
   async function fetchCourseLearning(courseId: string) {
     if (!courseId.trim()) {
+      mockCourseLearningEnabled.value = false
       error.value = "Course ID is missing"
       modules.value = []
       materialsById.value = {}
@@ -292,8 +311,13 @@ export function createCourseLearningStore() {
     error.value = null
     try {
       currentCourseId.value = courseId
-      const data = await getCourseLearning(courseId)
-      if (!data || !Array.isArray((data as any).modules)) {
+      const useMock = import.meta.env.VITE_MOCK_COURSE_LEARNING === "true"
+      mockCourseLearningEnabled.value = useMock
+
+      const data = useMock
+        ? buildMockCourseLearningDto(courseId)
+        : await getCourseLearning(courseId)
+      if (!data || !Array.isArray((data as { modules?: unknown }).modules)) {
         throw new Error("Invalid course learning response: missing `modules`")
       }
       enrollmentId.value = data.enrollmentId
@@ -310,6 +334,7 @@ export function createCourseLearningStore() {
       // Load assignments for this course (best-effort, non-blocking for main UI).
       void fetchAssignments(courseId)
     } catch (e) {
+      mockCourseLearningEnabled.value = false
       const message =
         e instanceof Error ? e.message : "Could not load course data"
       error.value = message
@@ -330,6 +355,12 @@ export function createCourseLearningStore() {
     assignmentsLoading.value = true
     assignmentsError.value = null
     try {
+      if (mockCourseLearningEnabled.value) {
+        const list = buildMockAssignments()
+        assignments.value = list
+        activeAssignmentId.value = list[0]?.assignmentId ?? ""
+        return
+      }
       const list = await getAssignments(id)
       assignments.value = list
       activeAssignmentId.value = list[0]?.assignmentId ?? ""
@@ -363,6 +394,24 @@ export function createCourseLearningStore() {
     assignmentSubmitting.value = true
     assignmentSubmitError.value = null
     try {
+      if (mockCourseLearningEnabled.value) {
+        const text = assignmentText.value
+        assignmentSubmitted.value = true
+        submittedAnswerText.value = text
+        assignments.value = assignments.value.map((x) =>
+          x.assignmentId === a.assignmentId
+            ? {
+                ...x,
+                submitted: true,
+                submissionId: "mock-submission-id",
+                submissionStatus: "SUBMITTED",
+                submittedAt: new Date().toISOString(),
+              }
+            : x,
+        )
+        toast.success("ส่งงานแล้ว (mock)")
+        return
+      }
       const res = await submitAssignment(a.assignmentId, {
         submissionText: assignmentText.value,
       })
