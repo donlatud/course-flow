@@ -15,11 +15,11 @@ import { cn } from "@/lib/utils";
 import { ArrowLeft } from "lucide-vue-next";
 import { api } from "@/lib/api";
 import {
-  uploadCoverImage,
   uploadAttachFile,
+  uploadCoverImage,
   uploadSubLessonImage,
-} from "@/lib/supabase";
-import { uploadVideoToCloudinary } from "@/lib/cloudinary";
+  uploadVideoToCloudinary,
+} from "@/lib/upload-api";
 import type { DraftSubLesson } from "@/views/admin/course-create.state";
 import {
   courseDraftState,
@@ -42,6 +42,7 @@ const courseId = route.params.courseId as string;
 const courseNameError = ref(false);
 const courseNameErrorMessage = ref("");
 const showCancelModal = ref(false);
+const showStatusModal = ref(false);
 const isSubmitting = ref(false);
 const isLoading = ref(true);
 const loadError = ref(false);
@@ -269,9 +270,10 @@ function validatePayload() {
   return true;
 }
 
-async function handleUpdateCourse() {
+type SaveStatus = "DRAFT" | "PUBLISHED";
+
+async function submitUpdateCourse(status: SaveStatus) {
   if (isSubmitting.value) return;
-  if (!validatePayload()) return;
 
   isSubmitting.value = true;
   try {
@@ -365,6 +367,7 @@ async function handleUpdateCourse() {
       coverImageUrl,
       trailerVideoUrl,
       attachmentUrl,
+      status,
       promoCode,
       modules,
     };
@@ -387,6 +390,22 @@ async function handleUpdateCourse() {
   } finally {
     isSubmitting.value = false;
   }
+}
+
+function handleSaveClick() {
+  if (isSubmitting.value) return;
+  if (!validatePayload()) return;
+  showStatusModal.value = true;
+}
+
+function handleUpdateAsDraft() {
+  showStatusModal.value = false;
+  void submitUpdateCourse("DRAFT");
+}
+
+function handleUpdateAsPublic() {
+  showStatusModal.value = false;
+  void submitUpdateCourse("PUBLISHED");
 }
 </script>
 
@@ -445,9 +464,9 @@ async function handleUpdateCourse() {
             type="button"
             class="h-15 w-[95px] min-w-[100px] rounded-xl bg-blue-500 px-6 text-[16px] font-bold text-white transition-colors hover:bg-blue-400 active:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed"
             :disabled="isSubmitting"
-            @click="handleUpdateCourse"
+            @click="handleSaveClick"
           >
-            {{ isSubmitting ? "Saving..." : "Edit" }}
+            {{ isSubmitting ? "Saving..." : "Save" }}
           </button>
         </div>
       </div>
@@ -615,5 +634,16 @@ async function handleUpdateCourse() {
     type="secondary"
     @left-click="keepEditing"
     @right-click="confirmCancel"
+  />
+
+  <Modal
+    v-model:open="showStatusModal"
+    title="Select course status"
+    message="Choose whether to save as draft or publish this course."
+    left-text="Draft"
+    right-text="Public"
+    type="secondary"
+    @left-click="handleUpdateAsDraft"
+    @right-click="handleUpdateAsPublic"
   />
 </template>

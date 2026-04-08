@@ -15,11 +15,11 @@ import { cn } from "@/lib/utils";
 import { ArrowLeft } from "lucide-vue-next";
 import { api } from "@/lib/api";
 import {
-  uploadCoverImage,
   uploadAttachFile,
+  uploadCoverImage,
   uploadSubLessonImage,
-} from "@/lib/supabase";
-import { uploadVideoToCloudinary } from "@/lib/cloudinary";
+  uploadVideoToCloudinary,
+} from "@/lib/upload-api";
 import {
   courseDraftState,
   deleteDraftLesson,
@@ -41,6 +41,7 @@ const courseNameErrorMessage = ref(
   "Please enter the course name before adding a lesson.",
 );
 const showCancelModal = ref(false);
+const showStatusModal = ref(false);
 const isSubmitting = ref(false);
 let skipLeaveGuard = false;
 let guardNext: NavigationGuardNext | null = null;
@@ -224,9 +225,10 @@ async function validateCourseNameUnique(): Promise<boolean> {
   return true;
 }
 
-async function handleCreateCourse() {
+type CreateStatus = "DRAFT" | "PUBLISHED";
+
+async function submitCreateCourse(status: CreateStatus) {
   if (isSubmitting.value) return;
-  if (!validateCreatePayload()) return;
 
   try {
     isSubmitting.value = true;
@@ -327,6 +329,7 @@ async function handleCreateCourse() {
       coverImageUrl,
       trailerVideoUrl,
       attachmentUrl,
+      status,
       promoCode,
       modules,
     };
@@ -348,6 +351,22 @@ async function handleCreateCourse() {
   } finally {
     isSubmitting.value = false;
   }
+}
+
+function handleCreateCourse() {
+  if (isSubmitting.value) return;
+  if (!validateCreatePayload()) return;
+  showStatusModal.value = true;
+}
+
+function handleCreateAsDraft() {
+  showStatusModal.value = false;
+  void submitCreateCourse("DRAFT");
+}
+
+function handleCreateAsPublic() {
+  showStatusModal.value = false;
+  void submitCreateCourse("PUBLISHED");
 }
 </script>
 
@@ -554,5 +573,16 @@ async function handleCreateCourse() {
     type="secondary"
     @left-click="keepEditing"
     @right-click="confirmCancel"
+  />
+
+  <Modal
+    v-model:open="showStatusModal"
+    title="Select course status"
+    message="Choose how you want to create this course."
+    left-text="Draft"
+    right-text="Public"
+    type="secondary"
+    @left-click="handleCreateAsDraft"
+    @right-click="handleCreateAsPublic"
   />
 </template>

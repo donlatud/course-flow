@@ -1,15 +1,44 @@
 <script setup lang="ts">
-import type { CourseItem } from "@/types/admin-course";
+import type {
+  CourseItem,
+  CourseSortDir,
+  CourseSortKey,
+  CourseStatus,
+} from "@/types/admin-course";
 import iconEdit from "@/assets/icon-edit.svg";
 import iconDelete from "@/assets/icon-delete.svg";
+import { format, isValid, parseISO } from "date-fns";
+import { ArrowDown, ArrowUp, ArrowUpDown } from "lucide-vue-next";
 
-withDefaults(
+/** e.g. 12/02/2022 10:30PM */
+function formatTableDateTime(value: string): string {
+  if (!value?.trim()) return "—";
+  const fromIso = parseISO(value);
+  const date = isValid(fromIso) ? fromIso : new Date(value);
+  if (!isValid(date)) return value;
+  return format(date, "dd/MM/yyyy h:mma");
+}
+
+function statusBadgeClass(status: CourseStatus): string {
+  switch (status) {
+    case "PUBLISHED":
+      return "bg-emerald-100 text-emerald-800 ring-emerald-200/60";
+    case "ARCHIVED":
+      return "bg-amber-100 text-amber-900 ring-amber-200/60";
+    default:
+      return "bg-yellow-100 text-yellow-800 ring-yellow-200/60";
+  }
+}
+
+const props = withDefaults(
   defineProps<{
     courses: CourseItem[];
     /** Shown when there are no rows (header is hidden). */
     emptyMessage?: string;
     /** Global index before first row (e.g. (page − 1) × pageSize → page 2 starts at 11). */
     rowOffset?: number;
+    sortBy: CourseSortKey;
+    sortDir: CourseSortDir;
   }>(),
   {
     emptyMessage: "No courses yet.",
@@ -19,7 +48,13 @@ withDefaults(
 
 const emit = defineEmits<{
   edit: [courseId: string];
+  sort: [key: CourseSortKey];
 }>();
+
+function ariaSortFor(key: CourseSortKey): "ascending" | "descending" | "none" {
+  if (props.sortBy !== key) return "none";
+  return props.sortDir === "asc" ? "ascending" : "descending";
+}
 </script>
 
 <template>
@@ -43,11 +78,164 @@ const emit = defineEmits<{
         <tr class="border-b border-gray-100 bg-gray-300">
           <th class="px-6 py-4 text-body3 text-gray-800"></th>
           <th class="px-6 py-4 text-body3 text-gray-800">Image</th>
-          <th class="px-6 py-4 text-body3 text-gray-800">Course name</th>
-          <th class="px-6 py-4 text-body3 text-gray-800">Lesson</th>
-          <th class="px-6 py-4 text-body3 text-gray-800">Price</th>
-          <th class="px-6 py-4 text-body3 text-gray-800">Created date</th>
-          <th class="px-6 py-4 text-body3 text-gray-800">Updated date</th>
+          <th class="px-6 py-4 text-body3 text-gray-800" scope="col">
+            Course name
+          </th>
+          <th
+            class="px-6 py-4 text-body3 text-gray-800"
+            scope="col"
+            :aria-sort="ariaSortFor('status')"
+          >
+            <button
+              type="button"
+              class="group inline-flex max-w-full cursor-pointer items-center gap-1.5 text-left font-medium text-gray-800 hover:text-gray-950"
+              @click="emit('sort', 'status')"
+            >
+              Status
+              <ArrowUpDown
+                v-if="props.sortBy !== 'status'"
+                class="h-4 w-4 shrink-0 opacity-50 group-hover:opacity-80"
+                :stroke-width="2"
+                aria-hidden="true"
+              />
+              <ArrowUp
+                v-else-if="props.sortDir === 'asc'"
+                class="h-4 w-4 shrink-0 text-blue-600"
+                :stroke-width="2"
+                aria-hidden="true"
+              />
+              <ArrowDown
+                v-else
+                class="h-4 w-4 shrink-0 text-blue-600"
+                :stroke-width="2"
+                aria-hidden="true"
+              />
+            </button>
+          </th>
+          <th
+            class="px-6 py-4 text-body3 text-gray-800"
+            scope="col"
+            :aria-sort="ariaSortFor('lessonCount')"
+          >
+            <button
+              type="button"
+              class="group inline-flex max-w-full cursor-pointer items-center gap-1.5 text-left font-medium text-gray-800 hover:text-gray-950"
+              @click="emit('sort', 'lessonCount')"
+            >
+              Lesson
+              <ArrowUpDown
+                v-if="props.sortBy !== 'lessonCount'"
+                class="h-4 w-4 shrink-0 opacity-50 group-hover:opacity-80"
+                :stroke-width="2"
+                aria-hidden="true"
+              />
+              <ArrowUp
+                v-else-if="props.sortDir === 'asc'"
+                class="h-4 w-4 shrink-0 text-blue-600"
+                :stroke-width="2"
+                aria-hidden="true"
+              />
+              <ArrowDown
+                v-else
+                class="h-4 w-4 shrink-0 text-blue-600"
+                :stroke-width="2"
+                aria-hidden="true"
+              />
+            </button>
+          </th>
+          <th
+            class="px-6 py-4 text-body3 text-gray-800"
+            scope="col"
+            :aria-sort="ariaSortFor('price')"
+          >
+            <button
+              type="button"
+              class="group inline-flex max-w-full cursor-pointer items-center gap-1.5 text-left font-medium text-gray-800 hover:text-gray-950"
+              @click="emit('sort', 'price')"
+            >
+              Price
+              <ArrowUpDown
+                v-if="props.sortBy !== 'price'"
+                class="h-4 w-4 shrink-0 opacity-50 group-hover:opacity-80"
+                :stroke-width="2"
+                aria-hidden="true"
+              />
+              <ArrowUp
+                v-else-if="props.sortDir === 'asc'"
+                class="h-4 w-4 shrink-0 text-blue-600"
+                :stroke-width="2"
+                aria-hidden="true"
+              />
+              <ArrowDown
+                v-else
+                class="h-4 w-4 shrink-0 text-blue-600"
+                :stroke-width="2"
+                aria-hidden="true"
+              />
+            </button>
+          </th>
+          <th
+            class="px-6 py-4 text-body3 text-gray-800"
+            scope="col"
+            :aria-sort="ariaSortFor('createdAt')"
+          >
+            <button
+              type="button"
+              class="group inline-flex max-w-full cursor-pointer items-center gap-1.5 text-left font-medium text-gray-800 hover:text-gray-950"
+              @click="emit('sort', 'createdAt')"
+            >
+              Created date
+              <ArrowUpDown
+                v-if="props.sortBy !== 'createdAt'"
+                class="h-4 w-4 shrink-0 opacity-50 group-hover:opacity-80"
+                :stroke-width="2"
+                aria-hidden="true"
+              />
+              <ArrowUp
+                v-else-if="props.sortDir === 'asc'"
+                class="h-4 w-4 shrink-0 text-blue-600"
+                :stroke-width="2"
+                aria-hidden="true"
+              />
+              <ArrowDown
+                v-else
+                class="h-4 w-4 shrink-0 text-blue-600"
+                :stroke-width="2"
+                aria-hidden="true"
+              />
+            </button>
+          </th>
+          <th
+            class="px-6 py-4 text-body3 text-gray-800"
+            scope="col"
+            :aria-sort="ariaSortFor('updatedAt')"
+          >
+            <button
+              type="button"
+              class="group inline-flex max-w-full cursor-pointer items-center gap-1.5 text-left font-medium text-gray-800 hover:text-gray-950"
+              @click="emit('sort', 'updatedAt')"
+            >
+              Updated date
+              <ArrowUpDown
+                v-if="props.sortBy !== 'updatedAt'"
+                class="h-4 w-4 shrink-0 opacity-50 group-hover:opacity-80"
+                :stroke-width="2"
+                aria-hidden="true"
+              />
+              <ArrowUp
+                v-else-if="props.sortDir === 'asc'"
+                class="h-4 w-4 shrink-0 text-blue-600"
+                :stroke-width="2"
+                aria-hidden="true"
+              />
+              <ArrowDown
+                v-else
+                class="h-4 w-4 shrink-0 text-blue-600"
+                :stroke-width="2"
+                aria-hidden="true"
+              />
+            </button>
+          </th>
           <th class="px-6 py-4 text-center text-body3 text-gray-800">Action</th>
         </tr>
       </thead>
@@ -76,6 +264,14 @@ const emit = defineEmits<{
               {{ course.name }}
             </span>
           </td>
+          <td class="px-6 py-4">
+            <span
+              class="inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ring-inset"
+              :class="statusBadgeClass(course.status)"
+            >
+              {{ course.statusLabel }}
+            </span>
+          </td>
           <td class="px-6 py-4 text-sm text-slate-600">
             {{ course.lessons }}
           </td>
@@ -83,10 +279,10 @@ const emit = defineEmits<{
             {{ course.price }}
           </td>
           <td class="px-6 py-4 text-sm text-slate-500">
-            {{ course.createdAt }}
+            {{ formatTableDateTime(course.createdAt) }}
           </td>
           <td class="px-6 py-4 text-sm text-slate-500">
-            {{ course.updatedAt }}
+            {{ formatTableDateTime(course.updatedAt) }}
           </td>
           <td class="px-6 py-4 text-center">
             <div class="flex justify-center gap-3">

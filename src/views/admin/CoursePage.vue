@@ -1,10 +1,29 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
+import { watchDebounced } from "@vueuse/core";
 import { Search } from "lucide-vue-next";
 import { useRouter } from "vue-router";
 import Table from "@/components/admin/CourseTable.vue";
 import { api } from "@/lib/api";
-import type { CourseItem } from "@/types/admin-course";
+import type {
+  CourseItem,
+  CourseSortDir,
+  CourseSortKey,
+  CourseStatus,
+} from "@/types/admin-course";
+
+function mapApiStatus(raw: unknown): { status: CourseStatus; statusLabel: string } {
+  const s = typeof raw === "string" ? raw.toUpperCase() : "";
+  if (s === "PUBLISHED" || s === "ARCHIVED" || s === "DRAFT") {
+    const labels: Record<CourseStatus, string> = {
+      DRAFT: "Draft",
+      PUBLISHED: "Published",
+      ARCHIVED: "Archived",
+    };
+    return { status: s, statusLabel: labels[s] };
+  }
+  return { status: "DRAFT", statusLabel: "Draft" };
+}
 import { resetCourseDraft } from "@/views/admin/course-create.state";
 import {
   Pagination,
@@ -19,46 +38,56 @@ const router = useRouter();
 
 const PAGE_SIZE = 10;
 const currentPage = ref(1);
+/** Synced from search after debounce; drives API `search` param. */
+const debouncedSearch = ref("");
 
 const courses = ref<CourseItem[]>([]);
 const totalElements = ref(0);
-console.log(courses);
-const serverTotalPages = ref(0);
 const isLoading = ref(false);
 const errorMessage = ref<string | null>(null);
 const searchText = ref("");
+const sortBy = ref<CourseSortKey>("createdAt");
+const sortDir = ref<CourseSortDir>("desc");
 
-watch(
+watchDebounced(
   searchText,
-  () => {
+  (v) => {
+    debouncedSearch.value = v.trim();
     currentPage.value = 1;
   },
-  { flush: "sync" },
+  { debounce: 350 },
 );
 
-watch(
-  [currentPage, searchText],
-  () => {
-    void fetchCourses();
-  },
-  { immediate: true },
-);
+watch([currentPage, debouncedSearch, sortBy, sortDir], () => {
+  fetchCourses();
+}, { immediate: true });
 
 const rowOffset = computed(() => (currentPage.value - 1) * PAGE_SIZE);
 
-const showPagination = computed(
-  () => !isLoading.value && !errorMessage.value && serverTotalPages.value > 1,
+const totalPages = computed(() =>
+  Math.max(1, Math.ceil(totalElements.value / PAGE_SIZE)),
 );
 
 const courseTableEmptyMessage = computed(() => {
-  if (courses.value.length > 0) return "";
-  if (searchText.value.trim()) {
+  if (totalElements.value > 0) return "";
+  if (debouncedSearch.value) {
     return "No courses match your search.";
   }
   return "No courses yet.";
 });
 
+function onSortColumn(key: CourseSortKey) {
+  if (sortBy.value === key) {
+    sortDir.value = sortDir.value === "asc" ? "desc" : "asc";
+  } else {
+    sortBy.value = key;
+    sortDir.value = "desc";
+  }
+  currentPage.value = 1;
+}
+
 function mapApiToCourseItem(apiItem: any): CourseItem {
+  const { status, statusLabel } = mapApiStatus(apiItem.status);
   return {
     id: apiItem.id,
     name: apiItem.title,
@@ -70,6 +99,8 @@ function mapApiToCourseItem(apiItem: any): CourseItem {
             maximumFractionDigits: 2,
           })
         : "0.00",
+    status,
+    statusLabel,
     createdAt: apiItem.createdAt,
     updatedAt: apiItem.updatedAt,
     image:
@@ -82,36 +113,29 @@ async function fetchCourses() {
   try {
     isLoading.value = true;
     errorMessage.value = null;
-    const pageZeroBased = currentPage.value - 1;
-    const params: Record<string, string | number> = {
-      page: pageZeroBased,
-      size: PAGE_SIZE,
+    const response = await api.get("/api/admin/courses", {
+      params: {
+        page: currentPage.value - 1,
+        size: PAGE_SIZE,
+        sortBy: sortBy.value,
+        sortDir: sortDir.value,
+        ...(debouncedSearch.value
+          ? { search: debouncedSearch.value }
+          : {}),
+      },
+    });
+    const data = response.data as {
+      content?: unknown[];
+      totalElements?: number;
     };
-    const q = searchText.value.trim();
-    if (q) {
-      params.title = q;
-    }
-    const { data } = await api.get("/api/admin/courses", { params });
-    const body = data as {
-      content: any[];
-      totalElements: number;
-      totalPages: number;
-    };
-    const tp = body.totalPages ?? 0;
-    const te = body.totalElements ?? 0;
-    serverTotalPages.value = tp;
-    totalElements.value = te;
-
-    if (tp > 0 && currentPage.value > tp) {
-      currentPage.value = tp;
-    }
-
-    courses.value = (body.content ?? []).map(mapApiToCourseItem);
-  } catch (error: unknown) {
+    courses.value = (data.content ?? []).map((item) =>
+      mapApiToCourseItem(item),
+    );
+    totalElements.value = data.totalElements ?? 0;
+  } catch (error: any) {
     console.error(error);
-    const err = error as { response?: { data?: { message?: string } } };
     errorMessage.value =
-      err?.response?.data?.message ?? "Failed to load courses.";
+      error?.response?.data?.message ?? "Failed to load courses.";
   } finally {
     isLoading.value = false;
   }
@@ -180,12 +204,15 @@ function goToCourseEdit(courseId: string) {
             :courses="courses"
             :row-offset="rowOffset"
             :empty-message="courseTableEmptyMessage"
+            :sort-by="sortBy"
+            :sort-dir="sortDir"
             @edit="goToCourseEdit"
+            @sort="onSortColumn"
           />
 
           <div
-            v-if="showPagination"
-            class="mt-8 flex w-full flex-wrap items-center justify-center gap-2 px-4 py-3 pb-10"
+            v-if="!isLoading && !errorMessage && totalPages > 1"
+            class="mt-8 flex w-full  flex-wrap items-center justify-center gap-2   px-4 py-3 pb-10 "
           >
             <Pagination
               v-model:page="currentPage"
@@ -207,8 +234,8 @@ function goToCourseEdit(courseId: string) {
                   "
                 >
                   <PaginationItem
-                    v-if="item.type === 'page'"
                     class="cursor-pointer"
+                    v-if="item.type === 'page'"
                     :value="item.value"
                     :is-active="item.value === currentPage"
                   >
