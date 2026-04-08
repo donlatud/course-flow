@@ -1,50 +1,69 @@
 <template>
-    <div 
-        @click="handleCardClick"
-        class="flex flex-col rounded-lg md:w-89.25 w-85.75 mx-auto shadow-1 cursor-pointer h-full "
-    >
-        <!-- Course Image -->
-        <img :src="image" :alt="title" class="w-full h-60 rounded-t-lg object-cover shrink-0" />
-        
-        <!-- Course Content -->
-        <div class="flex flex-col gap-1 p-6 grow">
-            <span class="text-body4 text-orange-500">Course</span>
-            <h1 class="text-body1">{{ title }}</h1>
-            <p class="text-body3 text-gray-700">{{ description }}</p>
-        </div> 
-        <hr class="shrink-0"/>
-        <!-- Course Meta -->
-        <div class="flex gap-4 p-6 h-14 shrink-0">
-            <p class="text-body3 text-gray-700 flex items-center gap-2">
-                <img src="@/assets/icon-book.svg" alt="book" class="w-3.75 h-3.75" style="filter: brightness(0) saturate(100%) invert(59%) sepia(99%) saturate(377%) hue-rotate(187deg) brightness(101%) contrast(91%);" />
-                {{ lesson }} lessons
-            </p>
-            <p class="text-body3 text-gray-700 flex items-center gap-2">
-                <img src="@/assets/icon-clock.svg" alt="clock" class="w-3.75 h-3.75" style="filter: brightness(0) saturate(100%) invert(59%) sepia(99%) saturate(377%) hue-rotate(187deg) brightness(101%) contrast(91%);" />
-                {{ duration }}
-            </p>
-        </div>
+  <div
+    @click="handleCardClick"
+    class="flex flex-col rounded-lg md:w-89.25 w-85.75 mx-auto shadow-1 cursor-pointer h-full"
+  >
+    <!-- Course Image -->
+    <img
+      :src="image"
+      :alt="title"
+      class="w-full h-60 rounded-t-lg object-cover shrink-0"
+    />
+
+    <!-- Course Content -->
+    <div class="flex flex-col gap-1 p-6 grow">
+      <span class="text-body4 text-orange-500">Course</span>
+      <h1 class="text-body1">{{ title }}</h1>
+      <p class="text-body3 text-gray-700">{{ description }}</p>
     </div>
+    <hr class="shrink-0" />
+    <!-- Course Meta -->
+    <div class="flex gap-4 p-6 h-14 shrink-0">
+      <p class="text-body3 text-gray-700 flex items-center gap-2">
+        <img
+          src="@/assets/icon-book.svg"
+          alt="book"
+          class="w-3.75 h-3.75"
+          style="
+            filter: brightness(0) saturate(100%) invert(59%) sepia(99%)
+              saturate(377%) hue-rotate(187deg) brightness(101%) contrast(91%);
+          "
+        />
+        {{ lesson }} lessons
+      </p>
+      <p class="text-body3 text-gray-700 flex items-center gap-2">
+        <img
+          src="@/assets/icon-clock.svg"
+          alt="clock"
+          class="w-3.75 h-3.75"
+          style="
+            filter: brightness(0) saturate(100%) invert(59%) sepia(99%)
+              saturate(377%) hue-rotate(187deg) brightness(101%) contrast(91%);
+          "
+        />
+        {{ duration }}
+      </p>
+    </div>
+  </div>
 </template>
 
 <script setup lang="ts">
-
 interface CourseCardProps {
   image: string;
   title: string;
   description: string;
   lesson: number;
   duration: string;
-  courseId?: number;
+  courseId?: string;
 }
 
 const props = defineProps<CourseCardProps>();
 
 const handleCardClick = () => {
-    if (props.courseId) {
-        window.location.href = `/courses/${props.courseId}`;
-    }
-}
+  if (props.courseId) {
+    window.location.href = `/courses/${props.courseId}`;
+  }
+};
 </script>
 
 <!--
