@@ -13,11 +13,31 @@ export interface Course {
   trailerVideoUrl?: string
   attachmentUrl?: string
   // Frontend specific fields (computed or added)
-  lesson?: number
-  duration?: string
+  lessonCount?: number
+  totalLearningTime?: string | number | null
   rating?: number
   students?: number
   level?: 'Beginner' | 'Intermediate' | 'Advanced'
+  modules?: ModuleWithMaterials[]
+}
+
+export interface Material {
+  id: string
+  title: string
+  orderIndex: number
+  fileUrl: string
+  detail: string | null
+  fileType: string
+  duration: number | null
+}
+
+export interface ModuleWithMaterials {
+  id?: string  // Optional alias for moduleId
+  moduleId: string
+  title: string
+  description: string | null
+  orderIndex: number
+  materials: Material[]
 }
 
 export interface CourseFilters {

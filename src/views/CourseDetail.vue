@@ -1,7 +1,7 @@
 <template>
   <div class="flex flex-col min-h-screen">
     <Navbar />
-    <main class="flex-1 px-4 py-8">
+    <main class="flex-1 px-4 py-8 md:px-40">
       <!-- Loading State -->
       <div v-if="loading" class="flex justify-center items-center py-12">
         <div class="text-body1 text-gray-600">Loading course...</div>
@@ -13,7 +13,7 @@
       </div>
 
       <!-- Course Detail -->
-      <div v-else-if="course" class="max-w-7xl mx-auto">
+      <div v-else-if="course" class=" mx-auto ">
           <!-- Back Button -->
           <button
             @click="goBack"
@@ -24,18 +24,31 @@
           </button>
 
           <!-- Main Content Layout -->
-          <div class="flex flex-col lg:flex-row gap-8">
+          <div class="flex flex-col lg:flex-row gap-8 w-full pb-25">
             <!-- Left Content -->
             <div class="flex-1">
               <div class="flex flex-col gap-8">
-                <!-- Course Image -->
-                <div class="w-full">
-                  <div class="relative">
-                    <img
-                      :src="course.coverImageUrl"
-                      :alt="course.title"
-                      class="w-full h-64 md:h-80 object-cover rounded-lg shadow-lg"
-                    />
+                <!-- Course Video -->
+                <div class="w-full  h-[213.5px] md:h-115">
+                  <div class="relative h-[213.5px] md:h-115">
+                    <video
+                      v-if="course.trailerVideoUrl"
+                      :src="course.trailerVideoUrl"
+                      controls
+                      class="w-full h-[213.5px] md:h-115 rounded-lg shadow-lg bg-black"
+                    >
+                      Your browser does not support the video tag.
+                    </video>
+                    <div
+                      v-else
+                      class="w-full h-[213.5px] md:h-115 rounded-lg shadow-lg bg-gray-200 flex items-center justify-center"
+                    >
+                      <img
+                        :src="course.coverImageUrl"
+                        :alt="course.title"
+                        class="w-full h-full object-cover rounded-lg"
+                      />
+                    </div>
                   </div>
                 </div>
 
@@ -50,40 +63,41 @@
                 <!-- Course Content -->
                 <div class="mt-8">
                   <CourseContent 
-                    :course-id="Number(route.params.id)"
-                    @lesson-selected="handleLessonSelected"
+                    :modules="course.modules || []"
+                    @material-selected="handleMaterialSelected"
                   />
                 </div>
 
-                <!-- Other Interesting Courses -->
-                <div class="flex flex-col  items-center gap-15 py-15">
-                  <h2 class="text-2xl font-bold text-gray-900 mb-6 text-center">
-                    Other Interesting Courses
-                  </h2>
-                  <div class="flex flex-col md:flex-row gap-6">
-                    <CourseCard
-                      v-for="course in otherCourses"
-                      :key="course.id"
-                      :image="course.coverImageUrl"
-                      :title="course.title"
-                      :description="course.description"
-                      :lesson="course.lesson || 0"
-                      :duration="course.duration || 'N/A'"
-                      :course-id="course.id"
-                    />
-                  </div>
-                </div>
               </div>
             </div>
 
             <!-- Desktop Right Sidebar -->
-            <div class="hidden lg:block w-80 shrink-0">
+            <div class="hidden lg:block w-[357px] shrink-0">
               <CourseSidebar 
                 :course="course"
                 :is-purchased="isPurchased"
               />
             </div>
           </div>
+
+                          <!-- Other Interesting Courses -->
+                <div class="flex flex-col items-center gap-15 py-15 bg-gray-100 w-screen ml-[calc(-50vw+50%)] -mb-8">
+                  <h2 class="text-2xl font-bold text-gray-900 mb-6 text-center">
+                    Other Interesting Courses
+                  </h2>
+                  <div class="flex flex-col md:flex-row gap-6 2xl:gap-10">
+                    <CourseCard
+                      v-for="course in otherCourses"
+                      :key="course.id"
+                      :image="course.coverImageUrl"
+                      :title="course.title"
+                      :description="course.description"
+                      :lesson="course.lessonCount || 0"
+                      :duration="course.totalLearningTime || 'N/A'"
+                      :course-id="course.id"
+                    />
+                  </div>
+                </div>
 
           <!-- Mobile Sticky Sidebar -->
           <div
@@ -146,7 +160,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from "vue";
+import { ref, onMounted, computed, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import Navbar from "@/components/shared/Navbar.vue";
 import AppFooter from "@/components/shared/AppFooter.vue";
@@ -154,7 +168,7 @@ import CourseCard from "@/components/courses/CourseCard.vue";
 import CourseContent from "@/components/courses/CourseContent.vue";
 import CourseSidebar from "@/components/courses/CourseSidebar.vue";
 import { courseService } from "@/services/courseService";
-import type { Course, Lesson } from "@/types/course";
+import type { Course, Material } from "@/types/course";
 import PrimaryButton from "@/components/base/button/PrimaryButton.vue";
 import SecondaryButton from "@/components/base/button/SecondaryButton.vue";
 
@@ -168,6 +182,7 @@ const error = ref<string | null>(null);
 const allCourses = ref<Course[]>([]);
 const showDescription = ref(false);
 const isPurchased = ref(false); // Set to true if user has purchased this course
+const isInitialLoadComplete = ref(false);
 
 const otherCourses = computed(() => {
   if (!course.value) return [];
@@ -190,24 +205,23 @@ const goToCheckout = () => {
   });
 };
 
-const handleLessonSelected = (lesson: Lesson) => {
-  console.log('Selected lesson:', lesson);
-  // TODO: Navigate to lesson player or show lesson content
+const handleMaterialSelected = (material: Material) => {
+  console.log('Selected material:', material);
+  // TODO: Navigate to video player or show material content
 };
 
-onMounted(async () => {
+// Load course by ID
+const loadCourse = async (courseId: string) => {
+  console.log("CourseDetail loadCourse called with:", courseId)
+  console.log("Current route params:", route.params)
   try {
     loading.value = true;
-
-    // Load all courses for recommendations
-    const allCoursesData = await courseService.getAllCourses();
-    allCourses.value = allCoursesData;
-
+    error.value = null;
+    
     // Load current course
-    const courseId = String(route.params.id);
-
     if (!courseId) {
       error.value = "Invalid course ID";
+      loading.value = false;
       return;
     }
 
@@ -215,15 +229,48 @@ onMounted(async () => {
 
     if (!courseData) {
       error.value = "Course not found";
+      loading.value = false;
       return;
     }
 
     course.value = courseData;
+    
+    // Simulate loading delay
+    await new Promise((resolve) => setTimeout(resolve, 500));
+    
   } catch (err) {
-    error.value = "Failed to load course";
     console.error("Error loading course:", err);
+    error.value = "Failed to load course. Please try again later.";
   } finally {
     loading.value = false;
+  }
+};
+
+onMounted(async () => {
+  try {
+    // Load all courses for recommendations
+    const allCoursesData = await courseService.getAllCourses();
+    allCourses.value = allCoursesData;
+
+    // Load current course
+    const courseId = String(route.params.id);
+    await loadCourse(courseId);
+  } catch (err) {
+    console.error("Error in onMounted:", err);
+    error.value = "Failed to load data. Please try again later.";
+    loading.value = false;
+  } finally {
+    isInitialLoadComplete.value = true;
+  }
+});
+
+// Watch for route changes and reload course (skip initial mount)
+watch(() => route.params.id, async (newId, oldId) => {
+  // Only reload if initial load is done and route actually changed
+  if (isInitialLoadComplete.value && newId && newId !== oldId) {
+    await loadCourse(String(newId));
+    // Scroll to top when navigating to new course
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 });
 </script>

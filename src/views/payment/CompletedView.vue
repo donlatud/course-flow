@@ -33,10 +33,20 @@ const goBack = () => {
 }
 
 const goToCourseDetail = () => {
+  console.log("Navigating to course detail, courseId:", courseId.value)
+  if (!courseId.value) {
+    console.error("courseId is empty, cannot navigate")
+    return
+  }
   router.push({ name: "course-detail", params: { id: courseId.value } })
 }
 
 const goToLearning = () => {
+  console.log("Navigating to learning, courseId:", courseId.value)
+  if (!courseId.value) {
+    console.error("courseId is empty, cannot navigate")
+    return
+  }
   router.push({ name: "course-learning", params: { courseId: courseId.value } })
 }
 </script>

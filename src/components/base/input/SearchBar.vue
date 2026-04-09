@@ -61,13 +61,17 @@ const handleKeydown = (event: KeyboardEvent) => {
         )"
       />
 
-      <!-- Search Icon -->
-      <div class="absolute left-4 top-1/2 -translate-y-1/2 flex items-center justify-center">
+      <!-- Search Icon (Clickable) -->
+      <button
+        type="button"
+        @click="handleSearch"
+        class="absolute left-4 top-1/2 -translate-y-1/2 flex items-center justify-center cursor-pointer hover:opacity-70 transition-opacity"
+      >
         <Search 
           class="w-5 h-5 text-gray-700"
           :class="{ 'text-gray-600': hasValue }"
         />
-      </div>
+      </button>
 
       <!-- Clear Button -->
       <button

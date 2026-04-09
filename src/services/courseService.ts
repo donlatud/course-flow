@@ -17,37 +17,32 @@ export class CourseService {
   // Get all courses
   async getAllCourses(): Promise<Course[]> {
     try {
-      console.log('Fetching courses from: /api/courses/published (via proxy)')
       const response = await fetch('/api/courses/published')
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`)
       }
       const courses = await response.json()
-      console.log('✅ Successfully fetched courses from API:', courses)
       return courses
     } catch (error) {
-      console.error('❌ Failed to fetch courses from API:', error)
       throw new Error('Failed to load courses. Please check if the API server is running.')
     }
   }
 
   // Get course by ID
   async getCourseById(id: string): Promise<Course | null> {
+    console.log("Fetching course with id:", id)
     try {
-      console.log(`Fetching course ${id} from: /api/courses/${id} (via proxy)`)
       const response = await fetch(`/api/courses/${id}`)
+      console.log("Response status:", response.status)
       if (!response.ok) {
         if (response.status === 404) {
-          console.log(`Course ${id} not found`)
           return null
         }
         throw new Error(`HTTP error! status: ${response.status}`)
       }
       const course = await response.json()
-      console.log(`✅ Successfully fetched course ${id} from API:`, course)
       return course
     } catch (error) {
-      console.error(`❌ Failed to fetch course ${id} from API:`, error)
       throw new Error('Failed to load course. Please check if the API server is running.')
     }
   }
@@ -61,7 +56,6 @@ export class CourseService {
       }
       return await response.json()
     } catch (error) {
-      console.error('Failed to fetch courses by category:', error)
       throw new Error('Failed to load courses by category.')
     }
   }
@@ -75,7 +69,6 @@ export class CourseService {
       }
       return await response.json()
     } catch (error) {
-      console.error('Failed to fetch courses by level:', error)
       throw new Error('Failed to load courses by level.')
     }
   }
@@ -89,7 +82,6 @@ export class CourseService {
       }
       return await response.json()
     } catch (error) {
-      console.error('Failed to search courses:', error)
       throw new Error('Failed to search courses.')
     }
   }
@@ -103,7 +95,6 @@ export class CourseService {
       }
       return await response.json()
     } catch (error) {
-      console.error('Failed to fetch featured courses:', error)
       throw new Error('Failed to load featured courses.')
     }
   }
@@ -117,7 +108,6 @@ export class CourseService {
       }
       return await response.json()
     } catch (error) {
-      console.error('Failed to fetch categories:', error)
       throw new Error('Failed to load categories.')
     }
   }
@@ -131,7 +121,6 @@ export class CourseService {
       }
       return await response.json()
     } catch (error) {
-      console.error('Failed to fetch levels:', error)
       throw new Error('Failed to load levels.')
     }
   }
@@ -145,7 +134,6 @@ export class CourseService {
       }
       return await response.json()
     } catch (error) {
-      console.error('Failed to fetch course content:', error)
       // Fallback to mock data for course content
       return mockCourseContents[courseId] || null
     }
@@ -160,7 +148,6 @@ export class CourseService {
       }
       return await response.json()
     } catch (error) {
-      console.error('Failed to fetch all course contents:', error)
       throw new Error('Failed to load all course contents.')
     }
   }

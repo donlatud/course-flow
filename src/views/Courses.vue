@@ -2,29 +2,21 @@
     <div class="flex flex-col min-h-screen">
         <Navbar />
         <main class="flex-1 pb-12 ">
-            <div class="flex flex-col items-center gap-8 md:gap-15 pt-10 py-12 md:py-25 relative overflow-clip">
-                <h1 class="text-headline2 font-medium text-center">Our Courses</h1>
+            <div class="flex flex-col items-center gap-8 md:gap-15 pt-10 py-12 md:py-25 relative overflow-clip min-h-[198px]">
+                <h1 class="md:text-headline2 text-headline3 font-medium text-center z-10">Our Courses</h1>
                 
                 <!-- Search Bar -->
                 <SearchBar 
                     v-model="searchQuery"
                     placeholder="Search..."
-                    class="w-full py-3 max-w-85.75"
+                    class="w-full py-3 max-w-85.75 z-10"
                     @search="handleSearch"
                     @clear="handleClearSearch"
                 />
-                <img :src="VectorYellowTriangle" alt="Vector Yellow Triangle" class="absolute top-17.25 left-80 w-9 h-9 object-cover
-                md:top-[154px] md:left-[1253px] md:w-10 md:h-10
-                2xl:left-[1790px]" />
-                <img :src="VectorGreenCross" alt="Vector Green Cross" class="absolute top-51.25 left-12.5 w-5 h-5 object-cover
-                md:top-[260px] md:left-[220px] md:w-5 md:h-5" />
-                <img :src="VectorBlueSmallCircle" alt="Vector Blue Small Circle" class="absolute top-26.25 -left-2 w-5 h-5 object-cover
-                md:top-[187px] md:left-[43px] " />
-                <img :src="VectorBlueSmallCircle" alt="Vector Blue Small Circle" class="absolute top-48.75 left-87 w-9 h-9 object-cover
-                md:top-[200px] md:left-[1400px] md:w-[74px] md:h-[74px]
-                2xl:left-[1940px]" />
-                <img :src="VectorSmallCircleDarkBlue" alt="Vector Small Circle Dark Blue" class="absolute top-10 left-7.5 w-2.5 h-2.5 object-cover
-                md:top-[128px] md:left-[102px]" />
+                <!-- Mobile Background -->
+                <img :src="VectorBackgroundMobile" alt="Background" class="absolute inset-0 w-full h-full object-contain md:hidden z-0 " />
+                <!-- Desktop Background -->
+                <img :src="VectorBackgroundDesktop" alt="Background" class="absolute inset-0 w-full h-full object-contain hidden md:block z-0" />
             </div>
             
             <!-- Loading State -->
@@ -54,22 +46,22 @@
                         :image="course.coverImageUrl"
                         :title="course.title"
                         :description="course.description"
-                        :lesson="course.lesson || 0"
-                        :duration="course.duration || 'N/A'"
+                        :lesson="course.lessonCount || 0"
+                        :duration="course.totalLearningTime || 'N/A'"
                         :course-id="course.id"
                     />
                 </div>
                 
                 <!-- Desktop Version: Grid 3 Columns -->
-                <div class="hidden md:grid md:grid-cols-3 2xl:grid-cols-4 md:gap-6 mx-[140px]">
+                <div class="hidden md:grid md:grid-cols-3  md:gap-6 mx-[140px]">
                     <CourseCard 
                         v-for="course in filteredCourses"
                         :key="course.id"
                         :image="course.coverImageUrl"
                         :title="course.title"
                         :description="course.description"   
-                        :lesson="course.lesson || 0"
-                        :duration="course.duration || 'N/A'"
+                        :lesson="course.lessonCount || 0"
+                        :duration="course.totalLearningTime || 'N/A'"
                         :course-id="course.id"
                     />
                 </div>
@@ -83,13 +75,13 @@
                 />
             </template>
         </main>
-        <CTASection />
+        <CTASection v-if="!isLoggedIn" />
         <AppFooter />
     </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import Navbar from '@/components/shared/Navbar.vue';
 import AppFooter from '@/components/shared/AppFooter.vue';
 import CTASection from '@/components/landing/CTASection.vue';
@@ -98,11 +90,10 @@ import SearchBar from '@/components/base/input/SearchBar.vue';
 import Pagination from '@/components/base/pagination/Pagination.vue';
 import { courseService } from '@/services/courseService'
 import type { Course } from '@/types/course'
+import { useAuth } from '@/composables/useAuth'
 
-import VectorYellowTriangle from '@/assets/vectors/vector_triangle_yellow.svg'
-import VectorGreenCross from '@/assets/vectors/vector_cross_green.svg'
-import VectorBlueSmallCircle from '@/assets/vectors/vector_small_circle_blue.svg'
-import VectorSmallCircleDarkBlue from '@/assets/vectors/vector_small_circle_dark_blue.svg'
+import VectorBackgroundMobile from '@/assets/vector_background_mobile.svg'
+import VectorBackgroundDesktop from '@/assets/vector_background_desktop.svg'
 
 const courses = ref<Course[]>([])
 const loading = ref(true)
@@ -111,12 +102,15 @@ const searchQuery = ref('')
 const searchResults = ref<Course[]>([])
 const currentPage = ref(1)
 
+const { user, isReady } = useAuth()
+const isLoggedIn = computed(() => isReady.value && !!user.value)
+
 const filteredCourses = computed(() => {
   let coursesToShow = searchQuery.value.trim() ? searchResults.value : courses.value
   
   // Pagination based on screen size
   const isMobile = window.innerWidth < 768
-  const limit = isMobile ? 6 : window.innerWidth >= 1536 ? 8 : 9
+  const limit = isMobile ? 6 : 9
   
   const startIndex = (currentPage.value - 1) * limit
   const endIndex = startIndex + limit
@@ -128,28 +122,33 @@ const totalPages = computed(() => {
   let coursesToShow = searchQuery.value.trim() ? searchResults.value : courses.value
   
   const isMobile = window.innerWidth < 768
-  const limit = isMobile ? 6 : window.innerWidth >= 1536 ? 8 : 9
+  const limit = isMobile ? 6 : 9
   
   return Math.ceil(coursesToShow.length / limit)
 })
 
-const handleSearch = async (query: string) => {
-  try {
-    if (query.trim()) {
-      searchResults.value = await courseService.searchCourses(query)
-    } else {
-      searchResults.value = []
-    }
-    
-    // Reset to first page when searching
-    currentPage.value = 1
-  } catch (err) {
-    console.error('Error searching courses:', err)
+// Real-time client-side search on every keystroke
+watch(searchQuery, (newQuery) => {
+  if (newQuery.trim()) {
+    const query = newQuery.toLowerCase()
+    searchResults.value = courses.value.filter(course => 
+      course.title.toLowerCase().includes(query) ||
+      course.description.toLowerCase().includes(query)
+    )
+  } else {
     searchResults.value = []
   }
+  // Reset to first page when searching
+  currentPage.value = 1
+}, { immediate: false })
+
+// Keep for compatibility with SearchBar (real-time search via watch)
+const handleSearch = (_query: string) => {
+  // Search is handled automatically by watch on searchQuery
 }
 
 const handleClearSearch = () => {
+  searchQuery.value = ''
   searchResults.value = []
   currentPage.value = 1
 }
@@ -162,13 +161,10 @@ const handlePageChange = (page: number) => {
 onMounted(async () => {
   try {
     loading.value = true
-    console.log('Fetching courses from API...')
     const data = await courseService.getAllCourses()
-    console.log('Courses data received:', data)
     courses.value = data
   } catch (err) {
     error.value = 'Failed to load courses'
-    console.error('Error loading courses:', err)
   } finally {
     loading.value = false
   }
