@@ -12,6 +12,8 @@ import CourseDetail from "@/views/CourseDetail.vue";
 import CourseLearningPage from "@/views/CourseLearningPage.vue";
 import LessonEditPage from "@/views/admin/LessonEditPage.vue";
 import CourseEditPage from "@/views/admin/CourseEditPage.vue";
+import PromoCodePage from "@/views/admin/PromoCodePage.vue";
+import PromoCodeCreatePage from "@/views/admin/PromoCodeCreatePage.vue";
 import AssignmentEditPage from "@/views/admin/AssignmentEditPage.vue";
 import AssignmentCreatePage from "@/views/admin/AssignmentCreatePage.vue";
 import CheckoutView from "@/views/payment/CheckoutView.vue";
@@ -81,6 +83,16 @@ const router = createRouter({
       component: CourseAssignmentsView,
     },
     { path: "/profile", name: "profile", component: ProfileView },
+    {
+      path: "/admin/promo-code",
+      name: "admin-promo-code",
+      component: PromoCodePage,
+    },
+    {
+      path: "/admin/promo-code/create",
+      name: "admin-promo-code-create",
+      component: PromoCodeCreatePage,
+    },
     {
       path: "/admin/course",
       name: "admin-course",
