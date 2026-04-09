@@ -56,7 +56,7 @@
                         :description="course.description"
                         :lesson="course.lesson || 0"
                         :duration="course.duration || 'N/A'"
-                        :course-id="Number(course.id)"
+                        :course-id="course.id"
                     />
                 </div>
                 
@@ -70,7 +70,7 @@
                         :description="course.description"   
                         :lesson="course.lesson || 0"
                         :duration="course.duration || 'N/A'"
-                        :course-id="Number(course.id)"
+                        :course-id="course.id"
                     />
                 </div>
                 
