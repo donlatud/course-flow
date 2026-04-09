@@ -110,7 +110,7 @@ const completedCount = computed(
 
     <!-- ================= MAIN ================= -->
     <main
-      class="relative z-10 flex-1 flex flex-col items-center px-4 lg:pt-25 pt-10 pb-28"
+      class="relative z-10 flex-1 flex flex-col items-center px-4 lg:pt-25 pt-10 pb-12"
     >
       <div class="w-full max-w-[1200px] flex flex-col">
         <h1
@@ -160,19 +160,20 @@ const completedCount = computed(
             </div>
           </div>
         </div>
+
+        <!-- Mobile: profile card after course list -->
+        <div class="xl:hidden mt-10 flex justify-center">
+          <UserProfileCard
+            variant="mobile"
+            :name="displayName"
+            :profile-image="profilePic"
+            :course-inprogress="inProgressCount"
+            :course-complete="completedCount"
+          />
+        </div>
       </div>
     </main>
 
     <AppFooter />
-    <!-- ================= MOBILE FIXED PROFILE ================= -->
-    <div class="h-[118px] xl:hidden">
-      <UserProfileCard
-        variant="mobile"
-        :name="displayName"
-        :profile-image="profilePic"
-        :course-inprogress="inProgressCount"
-        :course-complete="completedCount"
-      />
-    </div>
   </div>
 </template>

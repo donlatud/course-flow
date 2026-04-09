@@ -1,11 +1,19 @@
 <script setup lang="ts">
-defineProps<{
-  name: string;
-  profileImage?: string;
-  courseInprogress: number;
-  courseComplete: number;
-  variant?: "desktop" | "mobile";
-}>();
+withDefaults(
+  defineProps<{
+    name: string
+    profileImage?: string
+    courseInprogress: number
+    courseComplete: number
+    inProgressLabel?: string
+    completeLabel?: string
+    variant?: "desktop" | "mobile";
+  }>(),
+  {
+    inProgressLabel: "Course Inprogress",
+    completeLabel: "Course Complete",
+  },
+)
 </script>
 
 <template>
@@ -31,28 +39,25 @@ defineProps<{
       <div
         class="flex-1 flex flex-col gap-6 rounded-[8px] bg-gray-200 p-4 h-[134px]"
       >
-        <p class="text-body3 text-gray-600">Course Inprogress</p>
-        <p class="text-headline3">{{ courseInprogress }}</p>
+        <p class="text-body3 text-gray-600">{{ inProgressLabel }}</p>
+        <p class="text-headline3 text-gray-900">{{ courseInprogress }}</p>
       </div>
 
       <div
         class="flex-1 flex flex-col gap-6 rounded-[8px] bg-gray-200 p-4 h-[134px]"
       >
-        <p class="text-body3 text-gray-600">Course Complete</p>
+        <p class="text-body3 text-gray-600">{{ completeLabel }}</p>
         <p class="text-headline3">{{ courseComplete }}</p>
       </div>
     </div>
   </div>
 
-  <!-- ================= MOBILE FIXED BAR ================= -->
+  <!-- ================= MOBILE BAR ================= -->
   <div
   v-else
-  class="xl:hidden fixed bottom-0 left-0 right-0 z-50 bg-white px-6 py-4 gap-2 flex flex-col justify-between"
+  class="xl:hidden bg-white px-6 py-4 gap-2 flex flex-col justify-between rounded-[16px]"
   style="
-    height: 118px;
-    border-top-left-radius: 16px;
-    border-top-right-radius: 16px;
-    box-shadow: 0px -4px 24px 0px rgba(0, 0, 0, 0.08);
+    box-shadow: 4px 4px 24px rgba(0, 0, 0, 0.08);
   "
 >
   <div class="flex items-center gap-3">
@@ -70,12 +75,12 @@ defineProps<{
 
   <div class="flex gap-3 w-full h-[38px]">
     <div class="flex-1 bg-gray-200 rounded-lg px-4 py-2 flex justify-between items-center">
-      <span class="text-body4 text-gray-700">Course Inprogress</span>
+      <span class="text-body4 text-gray-700">{{ inProgressLabel }}</span>
       <span class="text-body1 font-semibold text-black">{{ courseInprogress }}</span>
     </div>
 
     <div class="flex-1 bg-gray-200 rounded-lg px-4 py-2 flex justify-between items-center">
-      <span class="text-body4 text-gray-700">Course Complete</span>
+      <span class="text-body4 text-gray-700">{{ completeLabel }}</span>
       <span class="text-body1 font-semibold text-black">{{ courseComplete }}</span>
     </div>
   </div>
