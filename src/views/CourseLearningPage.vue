@@ -21,6 +21,21 @@ watch(
   },
   { immediate: true },
 )
+
+const materialIdFromQuery = computed(() => {
+  const raw = route.query.materialId
+  return typeof raw === "string" ? raw : ""
+})
+
+watch(
+  [materialIdFromQuery, () => store.materialsById.value],
+  ([materialId, materials]) => {
+    if (!materialId) return
+    if (!materials || !materials[materialId]) return
+    store.setActiveLessonId(materialId)
+  },
+  { immediate: true },
+)
 </script>
 
 <template>
