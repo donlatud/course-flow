@@ -1,15 +1,15 @@
 <template>
-  <footer class="bg-blue-700 text-white py-8">
-    <div class="max-w-8xl mx-auto px-4 md:px-[160px]">
+  <footer class="bg-blue-700 text-white h-68 md:h-60">
+    <div class="max-w-8xl mx-auto px-4 md:px-40">
       <!-- Desktop Layout -->
-      <div class="hidden md:flex justify-between items-center md:h-60 h-68">
+      <div class="hidden md:flex justify-between items-center h-68 md:h-60">
         <!-- Logo -->
         <div class="flex items-center">
           <img
             src="@/assets/icon-courseflow.svg"
             alt="CourseFlow"
-            class="h-[16px] w-[140px]"
-          />
+            class="h-4 w-35"
+          />  
         </div>
 
         <!-- Links -->
@@ -49,7 +49,7 @@
       </div>
 
       <!-- Mobile Layout -->
-      <div class="md:hidden flex flex-col items-start space-y-6">
+      <div class="md:hidden flex flex-col items-start justify-center h-68 space-y-6">
         <!-- Logo -->
         <div class="flex items-center">
           <img

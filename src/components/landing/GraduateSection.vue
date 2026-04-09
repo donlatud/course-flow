@@ -33,7 +33,7 @@ const instructors = [
 </script>
 
 <template>
-  <section class="h-179 relative overflow-hidden md:overflow-visible py-16">
+  <section class="relative overflow-hidden md:overflow-visible py-16 md:h-179">
     <!-- Background Vectors -->
     <img 
       :src="vectorCircleDarkBlue" 
@@ -54,7 +54,7 @@ const instructors = [
     <h1 class="text-headline3 md:text-headline2 font-medium text-center relative z-10">Our Graduates</h1>
 
     <!-- Mobile Version -->
-    <div class="md:hidden py-8">
+    <div class="md:hidden pt-8">
       <Swiper
         :slides-per-view="1.2"
         :centered-slides="true"
@@ -65,10 +65,10 @@ const instructors = [
       >
         <SwiperSlide v-for="(ins, i) in instructors" :key="i" class="">
           <div
-            class="flex h-full justify-center overflow-visible  w-78 h-145.5 mx-auto pb-8"
+            class="flex h-full justify-center overflow-visible  w-78 h-145.5 mx-auto "
           >
             <div
-              class="px-6 w-78 h-145.5 rounded-lg shadow-lg text-left gap-[18px] flex flex-col relative z-10 mt-8 bg-white"
+              class="px-6 w-78 h-145.5 rounded-lg  text-left gap-4.5 flex flex-col relative z-10 mt-8 "
             >
               <img
                 :src="ins.image"

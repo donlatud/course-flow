@@ -1,7 +1,7 @@
 <template>
-  <nav class="bg-white sticky top-0 z-50 shadow-2">
-    <div class="max-w-8xl mx-auto px-4 md:px-40 py-4">
-      <div class="flex justify-between items-center h-16">
+  <div class="bg-white sticky top-0 z-50 shadow-2 h-[56px] md:h-[88px]">
+    <div class="max-w-8xl mx-auto px-4 md:px-40 h-full">
+      <div class="flex justify-between items-center h-full">
         <!-- Logo -->
         <router-link to="/" class="text-xl font-bold">
           <img
@@ -12,9 +12,9 @@
         </router-link>
 
         <!-- Right -->
-        <div v-if="isReady" class="flex items-center gap-2 md:gap-8">
+        <div v-if="isReady" class="flex items-center gap-2 ">
           <router-link to="/courses">
-            <button class="text-[14px] font-bold text-[#191C77] cursor-pointer">
+            <button class="text-[14px] font-bold text-[#191C77] cursor-pointer h-[81px] w-[138px]">
               Our Courses
             </button>
           </router-link>
@@ -28,29 +28,33 @@
             </PrimaryButton>
           </router-link>
 
-          <div v-if="isLogin" class="flex items-center gap-3">
+          <div v-if="isLogin" class="flex items-center gap-1">
             <div
-              class="flex items-center gap-2 border rounded-full p-2 border-black"
+              class="flex items-center cursor-pointer md:gap-3"
+              @click="toggleMenu"
             >
-              <img
-                :src="profilePic || profileIcon"
-                :alt="profilePic ? 'Profile Picture' : 'User'"
-                class="h-2.5 w-2.5 rounded-full object-cover"
-              />
-            </div>
+              <div
+                class="flex items-center gap-2 border rounded-full p-2 border-black w-10 h-10"
+              >
+                <img
+                  :src="profilePic || profileIcon"
+                  :alt="profilePic ? 'Profile Picture' : 'User'"
+                  class="h-full w-full rounded-full object-cover"
+                />
+              </div>
 
-            <span class="text-[16px] text-gray-800 md:flex hidden">{{
-              displayName
-            }}</span>
+              <span class="text-body2 text-gray-800 md:flex hidden">{{
+                displayName || 'User Name'
+              }}</span>
 
-            <div class="relative">
-              <button class="text-2xl cursor-pointer px-2" @click="toggleMenu">
+              <button class="text-2xl cursor-pointer px-2">
                 <img
                   src="@/assets/icon-arrow-down.svg"
                   alt="Arrow Down"
                   class="h-[5px] w-[10px]"
                 />
               </button>
+            </div>
 
               <div
                 v-if="isOpen"
@@ -60,7 +64,7 @@
                   <li v-for="(menu) in menus" :key="menu.path">
                     <template v-if="menu.name === 'Logout'">
                       <button
-                        class="flex items-center gap-3 py-2 w-full border-t border-gray-200 pt-4 -mx-4 px-4"
+                        class="flex items-center gap-3 py-2 w-full border-t border-gray-200 pt-4 -mx-4 px-4 cursor-pointer"
                         @click="
                           () => {
                             logout();
@@ -104,16 +108,13 @@
                 </ul>
               </div>
             </div>
-          </div>
-        </div>
-
-        <!-- Loading placeholder -->
         <div v-else class="flex items-center gap-2 md:gap-8">
           <div class="h-9 w-16 bg-gray-100 rounded animate-pulse"></div>
         </div>
       </div>
     </div>
-  </nav>
+  </div>
+</div>
 </template>
 
 <script setup lang="ts">
