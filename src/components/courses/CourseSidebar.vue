@@ -19,17 +19,17 @@
       <div class="flex flex-col gap-4 pt-6">
         <!-- Purchased State -->
         <template v-if="isPurchased">
-          <PrimaryButton class="w-full">
+          <PrimaryButton class="w-full" @click="emit('start-learning')">
             Start Learning
           </PrimaryButton>
         </template>
         
         <!-- Not Purchased State -->
         <template v-else>
-          <SecondaryButton class="w-full">
+          <SecondaryButton class="w-full" type="button" @click="emit('wishlist')">
             Add to Wishlist
           </SecondaryButton>
-          <PrimaryButton class="w-full">
+          <PrimaryButton class="w-full" type="button" @click="emit('subscribe')">
             Subscribe This Course
           </PrimaryButton>
         </template>
@@ -49,55 +49,11 @@ interface CourseSidebarProps {
 }
 
 defineProps<CourseSidebarProps>()
+
+const emit = defineEmits<{
+  subscribe: []
+  "start-learning": []
+  wishlist: []
+}>()
 </script>
 
-<!-- 
-USAGE EXAMPLE:
-
-<template>
-  <div class="flex flex-col lg:flex-row gap-8">
-
-    <div class="flex-1">
-
-    </div>
-    
-
-    <div class="hidden lg:block w-80 shrink-0">
-      <CourseSidebar 
-        :course="course"
-        :is-purchased="isPurchased"
-      />
-    </div>
-  </div>
-</template>
-
-<script setup lang="ts">
-import CourseSidebar from '@/components/courses/CourseSidebar.vue'
-import { ref } from 'vue'
-import type { Course } from '@/types/course'
-
-// Your course data
-const course = ref<Course>({
-  id: 1,
-  title: 'Course Title',
-  desc: 'Course description...',
-  price: 999,
-  category: 'Programming'
-  // ... other course properties
-})
-
-// Purchase status - set to true if user has purchased this course
-const isPurchased = ref(false)
-
-// You can dynamically update purchase status
-const handlePurchase = () => {
-  isPurchased.value = true
-}
-</script>
-
-PROPS:
-- course: Course object containing course information
-- isPurchased: Boolean (optional, defaults to false)
-  * false: Shows "Add to Wishlist" + "Subscribe This Course" + Price
-  * true: Shows only "Start Learning" button
- -->

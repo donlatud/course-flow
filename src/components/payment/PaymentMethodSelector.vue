@@ -1,4 +1,7 @@
 <script setup lang="ts">
+/**
+ * ฟอร์มบัตร + เลือกวิธีชำระ (Phase A รองรับแค่บัตร — ตั้ง qrEnabled=false จาก Checkout)
+ */
 import CustomInput from "@/components/base/input/CustomInput.vue"
 import visaCard from "@/assets/icon-card-visa.svg"
 import masterCard from "@/assets/icon-card-mastercard.svg"
@@ -17,6 +20,8 @@ defineProps<{
   cvvError: boolean
   cvvErrorMessage: string
   selectedPaymentMethod: "card" | "qr"
+  /** false = ปิดปุ่ม QR จนกว่าจะ implement flow จริง */
+  qrEnabled: boolean
 }>()
 
 const emit = defineEmits<{
@@ -119,7 +124,9 @@ const emit = defineEmits<{
       :class="[
         'mt-6 flex w-full items-center gap-3 rounded-[8px] px-4 py-4 text-left text-body2 text-gray-900 cursor-pointer lg:px-8',
         selectedPaymentMethod === 'qr' ? 'bg-gray-200' : 'bg-transparent',
+        !qrEnabled ? 'cursor-not-allowed opacity-50' : '',
       ]"
+      :disabled="!qrEnabled"
       @click="emit('select-payment-method', 'qr')"
     >
       <span
