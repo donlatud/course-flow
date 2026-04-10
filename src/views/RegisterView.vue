@@ -25,6 +25,14 @@ const passwordMismatch = computed(
   () => submitted.value && confirmPassword.value !== password.value,
 );
 
+const formatDateLocal = (date: Date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+};
+
 const handleRegister = async () => {
   submitted.value = true;
   isError.value = false;
@@ -38,28 +46,28 @@ const handleRegister = async () => {
     !password.value ||
     !confirmPassword.value ||
     password.value !== confirmPassword.value
-  )
-    return;
+  ) return;
 
   try {
-    // คำนวณ age จาก dateOfBirth
-    const age = new Date().getFullYear() - dateOfBirth.value.getFullYear();
+    const dob = formatDateLocal(dateOfBirth.value);
 
-    // ส่งไปที่ Spring Boot
     await api.post("/api/auth/register", {
       email: email.value,
       password: password.value,
       fullName: name.value,
-      age: age,
+      dateOfBirth: dob,
       educationalBackground: educationalBackground.value,
     });
 
     await login(email.value, password.value);
+
   } catch (error: any) {
     if (error?.response?.status === 409) {
       isError.value = true;
-      errorMessage.value = "This email is already registered. Please log in.";
+      errorMessage.value =
+        "This email is already registered. Please log in.";
     } else {
+      isError.value = true;
       errorMessage.value = "Register failed. Please try again.";
     }
   }

@@ -6,7 +6,14 @@ import{ api }from "@/lib/api"
 
 const user = ref<User | null>(null)
 const isReady = ref(false)
-const userProfile = ref<{ fullName: string; profilePictureUrl: string | null } | null>(null)
+const userProfile = ref<{ 
+  fullName: string; 
+  profilePictureUrl: string | null;
+  email?: string;                 
+  educationalBackground?: string; 
+  age?: number;
+  dateOfBirth?: string | null;  
+} | null>(null)
 
 export const useAuth = () => {
   const router = useRouter()
