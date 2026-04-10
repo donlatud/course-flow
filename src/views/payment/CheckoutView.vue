@@ -72,6 +72,7 @@ const {
   fetchOrderById,
   clearPendingPaymentMarkers,
   stopPolling,
+  orderClearedDueToExpiry,
 } = usePayment(courseId)
 /** ราคาแสดงใน Summary: ใช้จาก order หลังสร้างแล้ว; ก่อนมี order ใช้ราคาจาก course เป็นตัวเลขเริ่มต้น */
 const subtotalAmount = computed(() => order.value?.subtotal ?? course.value?.price ?? 0)
@@ -386,6 +387,8 @@ const applyPromoCode = async () => {
       USAGE_LIMIT_REACHED: "Promo code usage limit reached",
       ALREADY_USED: "You already used this promo code",
       INVALID: "Promo code is invalid",
+      COURSE_PRICE_TOO_LOW: "Promo codes can only be used for courses over ฿200",
+      FINAL_PRICE_TOO_LOW: "Final price after discount must be at least ฿100",
     }
     promoErrorMessage.value =
       reasonMap[promoValidation.reason || "INVALID"] || "Promo code is invalid"
@@ -432,9 +435,20 @@ const placeOrder = async () => {
     cvv: cvv.value,
   })
 
+  const checkoutExpiredDuringPayment = orderClearedDueToExpiry.value
+
   /** กรณี token หรือ API error แต่ไม่ redirect (เช่น network) */
   if (!paymentResponse && error.value) {
     checkoutErrorMessage.value = error.value
+  }
+
+  /** Phase D3: order หมดอายุระหว่างกดจ่าย — สร้าง order ใหม่ให้ promo เดิม (ถ้ามี) */
+  if (checkoutExpiredDuringPayment) {
+    orderNoticeMessage.value =
+      "Your checkout session expired. A new order has been prepared — you can try paying again."
+    await createOrRefreshOrder(
+      isPromoApplied.value ? normalizedPromoCode.value : undefined,
+    )
   }
 }
 </script>
