@@ -20,3 +20,28 @@ api.interceptors.request.use(async (config) => {
 
   return config
 });
+
+/**
+ * Phase D: JWT หมดอายุ / ไม่มีสิทธิ์ — ส่งไป login พร้อมกลับมาที่หน้าเดิมหลัง sign-in
+ * ไม่ redirect บน /login, /register, /admin/login — ให้แต่ละหน้าแสดง error เอง
+ * (แอดมินใช้คู่กับ `skipAuthRedirect` บน request สำคัญ — เผื่อมีหลาย request บนหน้าเดียวกัน)
+ */
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    const status = axios.isAxiosError(error) ? error.response?.status : undefined
+    if (status !== 401) {
+      return Promise.reject(error)
+    }
+
+    const path = window.location.pathname
+    if (path === "/login" || path === "/register" || path === "/admin/login") {
+      return Promise.reject(error)
+    }
+
+    const fullPath = path + window.location.search
+    const redirect = encodeURIComponent(fullPath)
+    window.location.assign(`${window.location.origin}/login?redirect=${redirect}`)
+    return Promise.reject(error)
+  },
+);

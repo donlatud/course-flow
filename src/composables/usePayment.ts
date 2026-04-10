@@ -40,6 +40,11 @@ import type { ComputedRef, Ref } from "vue"
 import { useRouter } from "vue-router"
 import { paymentService } from "@/services/paymentService"
 import { useOmise } from "@/composables/useOmise"
+import {
+  getHttpStatus,
+  getUserFacingApiMessage,
+  isOrderExpiredApiError,
+} from "@/lib/apiError"
 import type {
   OrderResponse,
   ValidatePromoCodeResponse,
@@ -107,6 +112,12 @@ export function usePayment(courseId: CourseIdSource) {
   
   /** Error message */
   const error = ref<string | null>(null)
+
+  /**
+   * หลัง `processCardPayment` ได้ 400 "Order has expired" — เคลียร์ order ใน state แล้ว;
+   * CheckoutView ใช้ flag นี้เพื่อสร้าง order ใหม่อัตโนมัติ (Phase D3)
+   */
+  const orderClearedDueToExpiry = ref(false)
   
   /** กำลัง polling order status */
   const isPolling = ref(false)
@@ -133,6 +144,7 @@ export function usePayment(courseId: CourseIdSource) {
   const createOrder = async (promoCode?: string): Promise<OrderResponse | null> => {
     isLoading.value = true
     error.value = null
+    orderClearedDueToExpiry.value = false
 
     try {
       order.value = await paymentService.createOrder({
@@ -140,9 +152,11 @@ export function usePayment(courseId: CourseIdSource) {
         promoCode,
       })
       return order.value
-    } catch (err: any) {
-      // Extract error message จาก response หรือ error object
-      error.value = err.response?.data?.message || err.message || "Failed to create order"
+    } catch (err: unknown) {
+      if (getHttpStatus(err) === 401) {
+        return null
+      }
+      error.value = getUserFacingApiMessage(err, "Failed to create order")
       return null
     } finally {
       isLoading.value = false
@@ -179,8 +193,11 @@ export function usePayment(courseId: CourseIdSource) {
         originalPrice,
       })
       return promoValidation.value
-    } catch (err: any) {
-      error.value = err.response?.data?.message || err.message || "Failed to validate promo code"
+    } catch (err: unknown) {
+      if (getHttpStatus(err) === 401) {
+        return null
+      }
+      error.value = getUserFacingApiMessage(err, "Failed to validate promo code")
       return null
     } finally {
       isLoading.value = false
@@ -263,13 +280,17 @@ export function usePayment(courseId: CourseIdSource) {
       }
 
       return paymentResult.value
-    } catch (err: any) {
-      // Error อาจมาจาก useOmise (tokenError) หรือ API
+    } catch (err: unknown) {
+      if (getHttpStatus(err) === 401) {
+        return null
+      }
+      if (isOrderExpiredApiError(err)) {
+        order.value = null
+        orderClearedDueToExpiry.value = true
+      }
       error.value =
         tokenError.value ||
-        err.response?.data?.message ||
-        err.message ||
-        "Payment processing failed"
+        getUserFacingApiMessage(err, "Payment processing failed")
       return null
     } finally {
       isLoading.value = false
@@ -385,8 +406,11 @@ export function usePayment(courseId: CourseIdSource) {
     try {
       order.value = await paymentService.getOrder(orderId)
       return order.value
-    } catch (err: any) {
-      error.value = err.response?.data?.message || err.message || "Failed to load order"
+    } catch (err: unknown) {
+      if (getHttpStatus(err) === 401) {
+        return null
+      }
+      error.value = getUserFacingApiMessage(err, "Failed to load order")
       return null
     }
   }
@@ -429,8 +453,11 @@ export function usePayment(courseId: CourseIdSource) {
 
       pollOrderStatus(orderId)
       return "polling"
-    } catch (err: any) {
-      error.value = err.response?.data?.message || err.message || "Failed to check order status"
+    } catch (err: unknown) {
+      if (getHttpStatus(err) === 401) {
+        return "error"
+      }
+      error.value = getUserFacingApiMessage(err, "Failed to check order status")
       return "error"
     } finally {
       isLoading.value = false
@@ -466,5 +493,6 @@ export function usePayment(courseId: CourseIdSource) {
     checkOrderStatusOnReturn,
     fetchOrderById,
     clearPendingPaymentMarkers,
+    orderClearedDueToExpiry,
   }
 }
