@@ -1,8 +1,15 @@
 <script setup lang="ts">
+/**
+ * สรุปยอด + ช่อง promo + ปุ่ม Place order (Phase A)
+ * ราคาเป็น string ที่ format แล้วจาก parent — ตัวเลขจริงมาจาก order ที่ backend
+ *
+ * ตาม payment-frontend-plan.md: ปุ่ม Place order `disabled` เฉพาะตอน `loading`;
+ * validation / ไม่มี order / ชำระไม่ได้ → จัดการใน parent (`place-order`) ไม่ disable ปุ่มจากเงื่อนไขเหล่านั้น
+ */
 import PrimaryButton from "@/components/base/button/PrimaryButton.vue"
 import CustomInput from "@/components/base/input/CustomInput.vue"
 
-defineProps<{
+const props = defineProps<{
   courseTitle: string
   promoCode: string
   formattedSubtotal: string
@@ -10,15 +17,30 @@ defineProps<{
   formattedTotal: string
   paymentMethodLabel: string
   isPromoApplied: boolean
-  isPromoCodeValid: boolean
+  canApplyPromo: boolean
+  promoErrorMessage: string
+  /** true ตอนโหลดคอร์ส — ใช้กับ Apply และ Place order (`disabled` เฉพาะตอนนี้) */
   loading: boolean
+  /** แสดงข้อความ "Processing..." บนปุ่ม Place order */
+  isProcessing: boolean
 }>()
 
 const emit = defineEmits<{
   (e: "update:promoCode", value: string): void
+  /** ช่อง promo ถูกล้างขณะที่ order มีส่วนลดจาก promo อยู่ — parent ต้องสร้าง order ใหม่ไม่มี promo */
+  (e: "remove-applied-promo"): void
   (e: "apply-promo"): void
   (e: "place-order"): void
 }>()
+
+const onPromoCodeInput = (raw: string | number) => {
+  const value = String(raw)
+  emit("update:promoCode", value)
+  /** ลบโค้ดออกจากช่อง → เอา discount ออกทันที; ต้องกรอกครบ + กด Apply อีกครั้งถึงจะใช้ promo ได้ */
+  if (value.trim() === "" && props.isPromoApplied) {
+    emit("remove-applied-promo")
+  }
+}
 </script>
 
 <template>
@@ -37,16 +59,19 @@ const emit = defineEmits<{
           :model-value="promoCode"
           placeholder="Promo code"
           class="min-w-0 flex-1"
-          @update:model-value="emit('update:promoCode', String($event))"
+          @update:model-value="onPromoCodeInput"
         />
         <PrimaryButton
           class="h-12! w-22! rounded-3! px-4!"
-          :disabled="!isPromoCodeValid"
+          :disabled="!canApplyPromo || loading"
           @click="emit('apply-promo')"
         >
-          Apply
+          {{ loading ? "Applying..." : "Apply" }}
         </PrimaryButton>
       </div>
+      <p v-if="promoErrorMessage" class="mb-4 text-body4 text-purple">
+        {{ promoErrorMessage }}
+      </p>
 
       <div class="space-y-3 text-body2 text-gray-900">
         <div class="flex items-start justify-between gap-2">
@@ -80,7 +105,7 @@ const emit = defineEmits<{
         :disabled="loading"
         @click="emit('place-order')"
       >
-        Place order
+        {{ isProcessing ? "Processing..." : "Place order" }}
       </PrimaryButton>
     </div>
   </aside>

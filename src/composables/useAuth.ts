@@ -2,7 +2,9 @@ import { ref, watch } from "vue"
 import type { User } from "@supabase/supabase-js"
 import { supabase } from "@/lib/supabase"
 import { useRouter } from "vue-router"
-import{ api }from "@/lib/api"
+import { api } from "@/lib/api"
+// ใช้ตรวจ path หลัง login — ค่ามาจาก LoginView (?redirect=) ต้องผ่านก่อน router.push
+import { sanitizeInternalRedirect } from "@/lib/authRedirect"
 
 const user = ref<User | null>(null)
 const isReady = ref(false)
@@ -65,14 +67,20 @@ export const useAuth = () => {
     }
   }
 
-  const login = async (email: string, password: string) => {
+  /**
+   * @param redirectAfter - path ภายในแอปที่จะไปหลัง login สำเร็จ (optional)
+   *   ส่งมาจาก LoginView หลังอ่าน query.redirect แล้ว sanitize แล้ว
+   *   ถ้าไม่ส่งหรือไม่ผ่านความปลอดภัย → ไป "/"
+   */
+  const login = async (email: string, password: string, redirectAfter?: string) => {
     loading.value = true
     error.value = ""
     try {
       const { data, error: err } = await supabase.auth.signInWithPassword({ email, password })
       if (err) throw err
       user.value = data.user
-      router.push("/")
+      const safe = sanitizeInternalRedirect(redirectAfter)
+      router.push(safe ?? "/")
     } catch (err: any) {
       error.value = err.message
     } finally {

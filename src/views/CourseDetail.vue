@@ -76,6 +76,9 @@
               <CourseSidebar 
                 :course="course"
                 :is-purchased="isPurchased"
+                @subscribe="goToCheckout"
+                @start-learning="goToLearning"
+                @wishlist="onWishlist"
               />
             </div>
           </div>
@@ -140,14 +143,31 @@
                   </p>
                 </div>
               </div>
-              <div class="text-body2 text-gray-700">
+              <div v-if="!isPurchased" class="text-body2 text-gray-700">
                 THB {{ course?.price }}
               </div>
-              <div class="flex gap-2 w-full">
-                <SecondaryButton class="w-1/2 h-8.5 text-[12px] font-bold">
+              <div v-if="isPurchased" class="flex w-full">
+                <PrimaryButton
+                  class="w-full h-8.5 text-[12px] font-bold"
+                  type="button"
+                  @click="goToLearning"
+                >
+                  Start Learning
+                </PrimaryButton>
+              </div>
+              <div v-else class="flex gap-2 w-full">
+                <SecondaryButton
+                  class="w-1/2 h-8.5 text-[12px] font-bold"
+                  type="button"
+                  @click="onWishlist"
+                >
                   Add to Wishlist
                 </SecondaryButton>
-                <PrimaryButton class="w-1/2 h-8.5 text-[12px] font-bold" @click="goToCheckout">
+                <PrimaryButton
+                  class="w-1/2 h-8.5 text-[12px] font-bold"
+                  type="button"
+                  @click="goToCheckout"
+                >
                   Subscribe This Course
                 </PrimaryButton>
               </div>
@@ -168,21 +188,42 @@ import CourseCard from "@/components/courses/CourseCard.vue";
 import CourseContent from "@/components/courses/CourseContent.vue";
 import CourseSidebar from "@/components/courses/CourseSidebar.vue";
 import { courseService } from "@/services/courseService";
+import { api } from "@/lib/api";
 import type { Course, Material } from "@/types/course";
 import PrimaryButton from "@/components/base/button/PrimaryButton.vue";
 import SecondaryButton from "@/components/base/button/SecondaryButton.vue";
+import { useAuth } from "@/composables/useAuth";
 
+interface EnrollmentItem {
+  enrollmentId: string;
+  courseId: string;
+}
 
 const route = useRoute();
 const router = useRouter();
+const { user, isReady } = useAuth();
 
 const course = ref<Course | null>(null);
 const loading = ref(true);
 const error = ref<string | null>(null);
 const allCourses = ref<Course[]>([]);
 const showDescription = ref(false);
-const isPurchased = ref(false); // Set to true if user has purchased this course
+const isPurchased = ref(false);
 const isInitialLoadComplete = ref(false);
+
+/** เช็กว่า user enroll คอร์สนี้แล้วหรือยัง (ต้อง login ก่อน) */
+const checkEnrollment = async (courseId: string) => {
+  if (!user.value) {
+    isPurchased.value = false;
+    return;
+  }
+  try {
+    const res = await api.get<EnrollmentItem[]>("/api/enrollments/my");
+    isPurchased.value = res.data.some((e) => e.courseId === courseId);
+  } catch {
+    isPurchased.value = false;
+  }
+};
 
 const otherCourses = computed(() => {
   if (!course.value) return [];
@@ -198,11 +239,50 @@ const goBack = () => {
   router.push("/courses");
 };
 
-const goToCheckout = () => {
+/** ไปหน้า login พร้อมบอกว่าหลัง login สำเร็จให้กลับมาที่ path นี้ */
+const pushLoginWithRedirect = (fullPath: string) => {
   router.push({
-    name: "checkout",
+    name: "login",
+    query: { redirect: fullPath },
+  });
+};
+
+const goToCheckout = () => {
+  if (!course.value || !isReady.value) return;
+  if (!user.value) {
+    pushLoginWithRedirect(
+      router.resolve({
+        name: "payment-checkout",
+        params: { courseId: String(route.params.id) },
+      }).fullPath,
+    );
+    return;
+  }
+  router.push({
+    name: "payment-checkout",
     params: { courseId: String(route.params.id) },
   });
+};
+
+const goToLearning = () => {
+  if (!course.value) return;
+  router.push({
+    name: "course-learning",
+    params: { courseId: String(route.params.id) },
+  });
+};
+
+const onWishlist = () => {
+  if (!course.value || !isReady.value) return;
+  if (!user.value) {
+    pushLoginWithRedirect(
+      router.resolve({
+        name: "course-detail",
+        params: { id: String(route.params.id) },
+      }).fullPath,
+    );
+    return;
+  }
 };
 
 const handleMaterialSelected = (material: Material) => {
@@ -248,13 +328,15 @@ const loadCourse = async (courseId: string) => {
 
 onMounted(async () => {
   try {
-    // Load all courses for recommendations
     const allCoursesData = await courseService.getAllCourses();
     allCourses.value = allCoursesData;
 
-    // Load current course
     const courseId = String(route.params.id);
     await loadCourse(courseId);
+
+    if (isReady.value) {
+      await checkEnrollment(courseId);
+    }
   } catch (err) {
     console.error("Error in onMounted:", err);
     error.value = "Failed to load data. Please try again later.";
@@ -264,13 +346,20 @@ onMounted(async () => {
   }
 });
 
-// Watch for route changes and reload course (skip initial mount)
 watch(() => route.params.id, async (newId, oldId) => {
-  // Only reload if initial load is done and route actually changed
   if (isInitialLoadComplete.value && newId && newId !== oldId) {
     await loadCourse(String(newId));
-    // Scroll to top when navigating to new course
+    await checkEnrollment(String(newId));
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 });
+
+watch(
+  [isReady, user],
+  async ([ready]) => {
+    if (ready && isInitialLoadComplete.value && route.params.id) {
+      await checkEnrollment(String(route.params.id));
+    }
+  },
+);
 </script>

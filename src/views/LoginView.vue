@@ -1,13 +1,16 @@
 <script setup lang="ts">
 import { ref } from "vue";
-import { RouterLink } from "vue-router";
+import { RouterLink, useRoute } from "vue-router";
 import Navbar from "@/components/shared/Navbar.vue";
 import CustomInput from "@/components/base/input/CustomInput.vue";
 import PrimaryButton from "@/components/base/button/PrimaryButton.vue";
 import GhostButton from "@/components/base/button/GhostButton.vue";
 import { useAuth } from "@/composables/useAuth";
 import { appToast } from "@/components/base/toast";
+import { sanitizeInternalRedirect } from "@/lib/authRedirect";
 
+// ใช้อ่าน ?redirect=... เมื่อ user ถูกส่งมาจากหน้าอื่น (เช่น กด Subscribe แล้วยังไม่ login)
+const route = useRoute();
 const { login, error } = useAuth();
 
 const email = ref("");
@@ -26,7 +29,9 @@ const handleLogin = async () => {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   if (!emailRegex.test(email.value)) return;
 
-  await login(email.value, password.value);
+  // อ่านจุดหมายหลัง login จาก URL แล้วกรองก่อนส่ง — ไม่ควรส่ง route.query.redirect ดิบไปที่ useAuth
+  const redirectAfter = sanitizeInternalRedirect(route.query.redirect);
+  await login(email.value, password.value, redirectAfter ?? undefined);
 
   if (error.value) {
     isError.value = true;

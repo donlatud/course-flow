@@ -1,4 +1,7 @@
 <script setup lang="ts">
+/**
+ * หน้าล้มเหลวหลังจ่าย — รับ `?reason=` และ `?orderId=` (Phase C: กลับ checkout พร้อม order เดิมถ้ายังจัดการได้)
+ */
 import { computed } from "vue"
 import { useRoute, useRouter } from "vue-router"
 import Navbar from "@/components/shared/Navbar.vue"
@@ -15,12 +18,50 @@ const courseId = computed(() =>
   typeof route.params.courseId === "string" ? route.params.courseId : "",
 )
 
+const orderIdQuery = computed(() => {
+  const raw = route.query.orderId
+  if (Array.isArray(raw)) return typeof raw[0] === "string" ? raw[0].trim() : ""
+  return typeof raw === "string" ? raw.trim() : ""
+})
+
+/** Raw `reason` from `?reason=` (payment failure message, order status code, etc.) */
+const reasonParam = computed(() => {
+  const raw = route.query.reason
+  if (Array.isArray(raw)) return typeof raw[0] === "string" ? raw[0] : ""
+  return typeof raw === "string" ? raw : ""
+})
+
+const DEFAULT_DETAIL =
+  "Please check your payment details and try again."
+
+/**
+ * ทุกกรณีใช้ข้อความเดียวกับ DEFAULT_DETAIL — ยกเว้น reason เป็นรหัส EXPIRED หรือ FAILED ให้ใช้ข้อความเฉพาะ
+ */
+const failureDetail = computed(() => {
+  const r = reasonParam.value.trim()
+  if (!r) return DEFAULT_DETAIL
+
+  const upper = r.toUpperCase()
+  if (upper === "EXPIRED") {
+    return "This order has expired. Go back to checkout to start a new order."
+  }
+  if (upper === "FAILED") {
+    return "Payment could not be completed. Try again or use a different card."
+  }
+
+  return DEFAULT_DETAIL
+})
+
 const goBack = () => {
   router.back()
 }
 
 const goToCheckout = () => {
-  router.push({ name: "payment-checkout", params: { courseId: courseId.value } })
+  router.push({
+    name: "payment-checkout",
+    params: { courseId: courseId.value },
+    query: orderIdQuery.value ? { orderId: orderIdQuery.value } : {},
+  })
 }
 </script>
 
@@ -48,7 +89,7 @@ const goToCheckout = () => {
                   Payment failed.
                 </h1>
                 <p class="w-[263px] text-body2 text-gray-700 lg:w-auto">
-                  Please check your payment details and try again
+                  {{ failureDetail }}
                 </p>
               </div>
             </div>
