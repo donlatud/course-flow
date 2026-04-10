@@ -36,6 +36,12 @@ const notFound = ref(false);
 
 const showCancelModal = ref(false);
 const showSaveModal = ref(false);
+const showDeleteSubLessonModal = ref(false);
+const showReplaceMediaModal = ref(false);
+const pendingReplaceMedia = ref<{ sub: DraftSubLesson; file: File } | null>(
+  null,
+);
+const pendingDeleteSubLessonId = ref<number | null>(null);
 let guardNext: NavigationGuardNext | null = null;
 
 const courseTitle = computed(() =>
@@ -86,11 +92,13 @@ function isFormDirty() {
   if (subLessons.value.length !== original.subLessons.length) return true;
   return subLessons.value.some((sub, i) => {
     const orig = original.subLessons[i];
+    if (!orig) return true;
     return (
       sub.name !== orig.name ||
       sub.detail !== orig.detail ||
       sub.fileType !== orig.fileType ||
-      sub.videoFile !== orig.videoFile
+      sub.videoFile !== orig.videoFile ||
+      sub.uploadedUrl !== orig.uploadedUrl
     );
   });
 }
@@ -123,6 +131,61 @@ function handleMediaChange(subLesson: DraftSubLesson, file: File | null) {
   }
 }
 
+function requestReplaceSubLessonMedia(sub: DraftSubLesson, file: File) {
+  pendingReplaceMedia.value = { sub, file };
+  showReplaceMediaModal.value = true;
+}
+
+function confirmReplaceSubLessonMedia() {
+  const p = pendingReplaceMedia.value;
+  if (!p) return;
+  p.sub.videoFile = p.file;
+  p.sub.uploadedUrl = null;
+  handleMediaChange(p.sub, p.file);
+  pendingReplaceMedia.value = null;
+  showReplaceMediaModal.value = false;
+}
+
+function cancelReplaceSubLessonMedia() {
+  pendingReplaceMedia.value = null;
+  showReplaceMediaModal.value = false;
+}
+
+function subLessonHasMedia(sub: DraftSubLesson): boolean {
+  return Boolean(sub.videoFile || sub.uploadedUrl?.trim());
+}
+
+const showChangeMediaTypeModal = ref(false);
+const pendingFileTypeChange = ref<{
+  sub: DraftSubLesson;
+  next: "VIDEO" | "IMAGE";
+} | null>(null);
+
+function requestFileTypeChange(sub: DraftSubLesson, next: "VIDEO" | "IMAGE") {
+  if (sub.fileType === next) return;
+  if (!subLessonHasMedia(sub)) {
+    sub.fileType = next;
+    return;
+  }
+  pendingFileTypeChange.value = { sub, next };
+  showChangeMediaTypeModal.value = true;
+}
+
+function confirmFileTypeChange() {
+  const p = pendingFileTypeChange.value;
+  if (!p) return;
+  p.sub.videoFile = null;
+  p.sub.uploadedUrl = null;
+  p.sub.fileType = p.next;
+  pendingFileTypeChange.value = null;
+  showChangeMediaTypeModal.value = false;
+}
+
+function cancelFileTypeChange() {
+  pendingFileTypeChange.value = null;
+  showChangeMediaTypeModal.value = false;
+}
+
 function subLessonNameHasError(id: number) {
   return subLessonNameErrorIds.value.has(id);
 }
@@ -147,6 +210,26 @@ function removeSubLesson(id: number) {
   const nextMessages = { ...subLessonNameErrorMessageById.value };
   delete nextMessages[id];
   subLessonNameErrorMessageById.value = nextMessages;
+}
+
+function requestRemoveSubLesson(id: number) {
+  if (subLessons.value.length === 1) return;
+  pendingDeleteSubLessonId.value = id;
+  showDeleteSubLessonModal.value = true;
+}
+
+function confirmRemoveSubLesson() {
+  const id = pendingDeleteSubLessonId.value;
+  if (id != null) {
+    removeSubLesson(id);
+  }
+  showDeleteSubLessonModal.value = false;
+  pendingDeleteSubLessonId.value = null;
+}
+
+function cancelRemoveSubLesson() {
+  showDeleteSubLessonModal.value = false;
+  pendingDeleteSubLessonId.value = null;
 }
 
 function scrollToError(selector: string) {
@@ -288,7 +371,7 @@ function confirmSaveLesson() {
 <template>
   <section class="flex min-h-screen flex-col bg-gray-100 max-w-[1920px]">
     <div
-      class="mx-auto flex h-[92px] w-full shrink-0 items-center justify-between gap-6 border-b border-gray-200 bg-white px-8"
+      class="mx-auto flex h-[92px] w-full shrink-0 items-center justify-between gap-6  bg-white px-8"
     >
       <div class="flex min-w-0 flex-1 items-center gap-4">
         <button
@@ -344,7 +427,7 @@ function confirmSaveLesson() {
       <!-- Lesson not found state -->
       <div
         v-if="notFound"
-        class="mx-auto flex w-full max-w-[1920px] flex-col items-center justify-center gap-4 rounded-3xl border border-[#E8E3F5] bg-white py-20 shadow-sm"
+        class="mx-auto flex w-full max-w-[1920px] flex-col items-center justify-center gap-4 bg-white py-20"
       >
         <p class="text-headline4 text-gray-500">Lesson not found.</p>
         <button
@@ -358,7 +441,7 @@ function confirmSaveLesson() {
 
       <div
         v-else
-        class="mx-auto w-full max-w-[1920px] rounded-3xl border border-[#E8E3F5] bg-white py-10 px-25 shadow-sm"
+        class="mx-auto w-full max-w-[1920px] rounded-3xl bg-white py-10 px-25 "
       >
         <div class="mx-auto flex w-full max-w-[920px] flex-col gap-10">
           <div id="lesson-name-field">
@@ -420,7 +503,7 @@ function confirmSaveLesson() {
                               ? 'border-blue-500 bg-blue-50 text-blue-600'
                               : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
                           "
-                          @click="subLesson.fileType = 'VIDEO'"
+                          @click="requestFileTypeChange(subLesson, 'VIDEO')"
                         >
                           Video
                         </button>
@@ -432,7 +515,7 @@ function confirmSaveLesson() {
                               ? 'border-blue-500 bg-blue-50 text-blue-600'
                               : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
                           "
-                          @click="subLesson.fileType = 'IMAGE'"
+                          @click="requestFileTypeChange(subLesson, 'IMAGE')"
                         >
                           Image
                         </button>
@@ -440,6 +523,7 @@ function confirmSaveLesson() {
 
                       <MediaInput
                         v-model="subLesson.videoFile"
+                        :existing-url="subLesson.uploadedUrl ?? undefined"
                         :title="
                           subLesson.fileType === 'VIDEO' ? 'Video *' : 'Image *'
                         "
@@ -455,7 +539,13 @@ function confirmSaveLesson() {
                             ? 'video/mp4,video/quicktime,video/x-msvideo,.mp4,.mov,.avi'
                             : 'image/jpeg,image/png,image/jpg,.jpg,.jpeg,.png'
                         "
+                        :confirm-before-replace="
+                          Boolean(subLesson.uploadedUrl || subLesson.videoFile)
+                        "
                         @change="handleMediaChange(subLesson, $event)"
+                        @replace-confirm="
+                          requestReplaceSubLessonMedia(subLesson, $event)
+                        "
                       />
 
                       <div class="flex flex-col gap-1">
@@ -492,7 +582,7 @@ function confirmSaveLesson() {
                             : 'cursor-pointer text-red-400 hover:bg-red-50 hover:text-red-600 active:bg-red-100/80'
                         "
                         :disabled="subLessons.length === 1"
-                        @click="removeSubLesson(subLesson.id)"
+                        @click="requestRemoveSubLesson(subLesson.id)"
                       >
                         <img
                           :src="iconDelete"
@@ -542,5 +632,40 @@ function confirmSaveLesson() {
     type="secondary"
     @left-click="showSaveModal = false"
     @right-click="confirmSaveLesson"
+  />
+
+  <Modal
+    v-model:open="showDeleteSubLessonModal"
+    title="Delete Sub-lesson"
+    message="Are you sure you want to delete this sub-lesson?"
+    left-text="Cancel"
+    right-text="Yes, delete"
+    type="secondary"
+    @left-click="cancelRemoveSubLesson"
+    @right-click="confirmRemoveSubLesson"
+  />
+
+  <Modal
+    v-model:open="showReplaceMediaModal"
+    title="Replace media?"
+    message="A file is already selected or uploaded for this sub-lesson. Replace it with the new file? The previous media will be cleared from this draft until you save the lesson."
+    left-text="Cancel"
+    right-text="Replace"
+    type="secondary"
+    @close="cancelReplaceSubLessonMedia"
+    @left-click="cancelReplaceSubLessonMedia"
+    @right-click="confirmReplaceSubLessonMedia"
+  />
+
+  <Modal
+    v-model:open="showChangeMediaTypeModal"
+    title="Change media type?"
+    message="Switching between Video and Image will remove the current file or uploaded media for this sub-lesson. Continue?"
+    left-text="Cancel"
+    right-text="Switch"
+    type="secondary"
+    @close="cancelFileTypeChange"
+    @left-click="cancelFileTypeChange"
+    @right-click="confirmFileTypeChange"
   />
 </template>

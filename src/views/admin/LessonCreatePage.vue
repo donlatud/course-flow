@@ -3,7 +3,6 @@ import { computed, nextTick, ref, watch } from "vue";
 import { onBeforeRouteLeave, useRoute, useRouter } from "vue-router";
 import type { NavigationGuardNext } from "vue-router";
 import { ArrowLeft, GripVertical } from "lucide-vue-next";
-import iconDelete from "@/assets/icon-delete.svg";
 import CustomInput from "@/components/base/input/CustomInput.vue";
 import MediaInput from "@/components/base/input/MediaInput.vue";
 import Modal from "@/components/base/modal/Modal.vue";
@@ -40,6 +39,61 @@ function handleMediaChange(subLesson: DraftSubLesson, file: File | null) {
   }
 }
 
+function requestReplaceSubLessonMedia(sub: DraftSubLesson, file: File) {
+  pendingReplaceMedia.value = { sub, file };
+  showReplaceMediaModal.value = true;
+}
+
+function confirmReplaceSubLessonMedia() {
+  const p = pendingReplaceMedia.value;
+  if (!p) return;
+  p.sub.videoFile = p.file;
+  p.sub.uploadedUrl = null;
+  handleMediaChange(p.sub, p.file);
+  pendingReplaceMedia.value = null;
+  showReplaceMediaModal.value = false;
+}
+
+function cancelReplaceSubLessonMedia() {
+  pendingReplaceMedia.value = null;
+  showReplaceMediaModal.value = false;
+}
+
+function subLessonHasMedia(sub: DraftSubLesson): boolean {
+  return Boolean(sub.videoFile || sub.uploadedUrl?.trim());
+}
+
+const showChangeMediaTypeModal = ref(false);
+const pendingFileTypeChange = ref<{
+  sub: DraftSubLesson;
+  next: "VIDEO" | "IMAGE";
+} | null>(null);
+
+function requestFileTypeChange(sub: DraftSubLesson, next: "VIDEO" | "IMAGE") {
+  if (sub.fileType === next) return;
+  if (!subLessonHasMedia(sub)) {
+    sub.fileType = next;
+    return;
+  }
+  pendingFileTypeChange.value = { sub, next };
+  showChangeMediaTypeModal.value = true;
+}
+
+function confirmFileTypeChange() {
+  const p = pendingFileTypeChange.value;
+  if (!p) return;
+  p.sub.videoFile = null;
+  p.sub.uploadedUrl = null;
+  p.sub.fileType = p.next;
+  pendingFileTypeChange.value = null;
+  showChangeMediaTypeModal.value = false;
+}
+
+function cancelFileTypeChange() {
+  pendingFileTypeChange.value = null;
+  showChangeMediaTypeModal.value = false;
+}
+
 function subLessonNameHasError(id: number) {
   return subLessonNameErrorIds.value.has(id);
 }
@@ -52,6 +106,12 @@ function subLessonNameErrorMessage(id: number) {
 }
 const showCancelModal = ref(false);
 const showCreateModal = ref(false);
+const showDeleteSubLessonModal = ref(false);
+const showReplaceMediaModal = ref(false);
+const pendingReplaceMedia = ref<{ sub: DraftSubLesson; file: File } | null>(
+  null,
+);
+const pendingDeleteSubLessonId = ref<number | null>(null);
 let guardNext: NavigationGuardNext | null = null;
 
 const courseTitle = computed(() =>
@@ -86,7 +146,11 @@ watch(
 function isLessonFormEmpty() {
   if (lessonName.value.trim()) return false;
   return subLessons.value.every(
-    (s) => !s.name.trim() && !s.detail.trim() && !s.videoFile,
+    (s) =>
+      !s.name.trim() &&
+      !s.detail.trim() &&
+      !s.videoFile &&
+      !s.uploadedUrl,
   );
 }
 
@@ -130,6 +194,26 @@ function removeSubLesson(id: number) {
   const nextMessages = { ...subLessonNameErrorMessageById.value };
   delete nextMessages[id];
   subLessonNameErrorMessageById.value = nextMessages;
+}
+
+function requestRemoveSubLesson(id: number) {
+  if (subLessons.value.length === 1) return;
+  pendingDeleteSubLessonId.value = id;
+  showDeleteSubLessonModal.value = true;
+}
+
+function confirmRemoveSubLesson() {
+  const id = pendingDeleteSubLessonId.value;
+  if (id != null) {
+    removeSubLesson(id);
+  }
+  showDeleteSubLessonModal.value = false;
+  pendingDeleteSubLessonId.value = null;
+}
+
+function cancelRemoveSubLesson() {
+  showDeleteSubLessonModal.value = false;
+  pendingDeleteSubLessonId.value = null;
 }
 
 function scrollToError(selector: string) {
@@ -268,7 +352,7 @@ function confirmCreateLesson() {
 <template>
   <section class="flex min-h-screen flex-col bg-gray-100 max-w-[1920px]">
     <div
-      class="mx-auto flex h-[92px] w-full  shrink-0 items-center justify-between gap-6 border-b border-gray-200 bg-white px-8"
+      class="mx-auto flex h-[92px] w-full  shrink-0 items-center justify-between gap-6 border-b bg-white px-8"
     >
       <div class="flex min-w-0 flex-1 items-center gap-4">
         <button
@@ -321,7 +405,7 @@ function confirmCreateLesson() {
     </div>
 
     <div class="min-h-0 flex-1 overflow-y-auto px-8 py-10">
-      <div class="mx-auto w-full max-w-[1920px] rounded-3xl border border-[#E8E3F5] bg-white py-10 px-25 shadow-sm">
+      <div class="mx-auto w-full max-w-[1920px] rounded-3xl bg-white py-10 px-25 ">
         <div class="mx-auto flex w-full max-w-[920px] flex-col gap-10">
           <div id="lesson-name-field">
             <CustomInput
@@ -380,7 +464,7 @@ function confirmCreateLesson() {
                               ? 'border-blue-500 bg-blue-50 text-blue-600'
                               : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
                           "
-                          @click="subLesson.fileType = 'VIDEO'"
+                          @click="requestFileTypeChange(subLesson, 'VIDEO')"
                         >
                           Video
                         </button>
@@ -392,13 +476,14 @@ function confirmCreateLesson() {
                               ? 'border-blue-500 bg-blue-50 text-blue-600'
                               : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
                           "
-                          @click="subLesson.fileType = 'IMAGE'"
+                          @click="requestFileTypeChange(subLesson, 'IMAGE')"
                         >
                           Image
                         </button>
                       </div>
                       <MediaInput
                         v-model="subLesson.videoFile"
+                        :existing-url="subLesson.uploadedUrl ?? undefined"
                         :title="subLesson.fileType === 'VIDEO' ? 'Video *' : 'Image *'"
                         subtitle=""
                         :uploadtext="
@@ -412,7 +497,13 @@ function confirmCreateLesson() {
                             ? 'video/mp4,video/quicktime,video/x-msvideo,.mp4,.mov,.avi'
                             : 'image/jpeg,image/png,image/jpg,.jpg,.jpeg,.png'
                         "
+                        :confirm-before-replace="
+                          Boolean(subLesson.uploadedUrl || subLesson.videoFile)
+                        "
                         @change="handleMediaChange(subLesson, $event)"
+                        @replace-confirm="
+                          requestReplaceSubLessonMedia(subLesson, $event)
+                        "
                       />
                       <div class="flex flex-col gap-1">
                         <label
@@ -436,25 +527,19 @@ function confirmCreateLesson() {
                       </div>
                     </div>
 
-                    <div class="flex flex-col items-end gap-4">
+                    <div class="flex flex-col">
                       <button
                         type="button"
-                        class="inline-flex items-center gap-2 rounded-md px-1 py-0.5 text-body3 font-medium transition-colors"
+                        class="inline-flex items-center gap-2 rounded-md px-1 text-body3 font-medium transition-colors"
                         :class="
                           subLessons.length === 1
                             ? 'cursor-not-allowed text-gray-300'
-                            : 'cursor-pointer text-red-400 hover:bg-red-50 hover:text-red-600 active:bg-red-100/80'
+                            : 'cursor-pointer text-blue-400 hover:bg-blue-50 hover:text-blue-600 active:bg-red-100/80'
                         "
                         :disabled="subLessons.length === 1"
-                        @click="removeSubLesson(subLesson.id)"
+                        @click="requestRemoveSubLesson(subLesson.id)"
                       >
-                        <img
-                          :src="iconDelete"
-                          alt=""
-                          class="pointer-events-none h-4 w-4 shrink-0"
-                          width="16"
-                          height="16"
-                        />
+
                         Delete
                       </button>
 
@@ -498,5 +583,40 @@ function confirmCreateLesson() {
     type="secondary"
     @left-click="showCreateModal = false"
     @right-click="confirmCreateLesson"
+  />
+
+  <Modal
+    v-model:open="showDeleteSubLessonModal"
+    title="Delete Sub-lesson"
+    message="Are you sure you want to delete this sub-lesson?"
+    left-text="Cancel"
+    right-text="Yes, delete"
+    type="secondary"
+    @left-click="cancelRemoveSubLesson"
+    @right-click="confirmRemoveSubLesson"
+  />
+
+  <Modal
+    v-model:open="showReplaceMediaModal"
+    title="Replace media?"
+    message="A file is already selected or uploaded for this sub-lesson. Replace it with the new file? The previous media will be removed from this draft until you save the course."
+    left-text="Cancel"
+    right-text="Replace"
+    type="secondary"
+    @close="cancelReplaceSubLessonMedia"
+    @left-click="cancelReplaceSubLessonMedia"
+    @right-click="confirmReplaceSubLessonMedia"
+  />
+
+  <Modal
+    v-model:open="showChangeMediaTypeModal"
+    title="Change media type?"
+    message="Switching between Video and Image will remove the current file or uploaded media for this sub-lesson. Continue?"
+    left-text="Cancel"
+    right-text="Switch"
+    type="secondary"
+    @close="cancelFileTypeChange"
+    @left-click="cancelFileTypeChange"
+    @right-click="confirmFileTypeChange"
   />
 </template>

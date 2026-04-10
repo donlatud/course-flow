@@ -15,11 +15,11 @@ import { cn } from "@/lib/utils";
 import { ArrowLeft } from "lucide-vue-next";
 import { api } from "@/lib/api";
 import {
-  uploadCoverImage,
   uploadAttachFile,
+  uploadCoverImage,
   uploadSubLessonImage,
-} from "@/lib/supabase";
-import { uploadVideoToCloudinary } from "@/lib/cloudinary";
+  uploadVideoToCloudinary,
+} from "@/lib/upload-api";
 import type { DraftSubLesson } from "@/views/admin/course-create.state";
 import {
   courseDraftState,
@@ -42,6 +42,7 @@ const courseId = route.params.courseId as string;
 const courseNameError = ref(false);
 const courseNameErrorMessage = ref("");
 const showCancelModal = ref(false);
+const showStatusModal = ref(false);
 const isSubmitting = ref(false);
 const isLoading = ref(true);
 const loadError = ref(false);
@@ -219,10 +220,20 @@ function validatePayload() {
     return false;
   }
 
-  if (!courseDraftState.totalLearningTime.trim()) {
+  const totalLearningStr = String(
+    courseDraftState.totalLearningTime ?? "",
+  ).trim();
+  if (!totalLearningStr || !Number.isFinite(Number(totalLearningStr))) {
     appToast.error(
       "Total learning time is required",
       "Please enter total learning time in hours.",
+    );
+    return false;
+  }
+  if (Number(totalLearningStr) < 1) {
+    appToast.error(
+      "Total learning time",
+      "Enter at least 1 hour.",
     );
     return false;
   }
@@ -259,9 +270,10 @@ function validatePayload() {
   return true;
 }
 
-async function handleUpdateCourse() {
+type SaveStatus = "DRAFT" | "PUBLISHED";
+
+async function submitUpdateCourse(status: SaveStatus) {
   if (isSubmitting.value) return;
-  if (!validatePayload()) return;
 
   isSubmitting.value = true;
   try {
@@ -329,13 +341,17 @@ async function handleUpdateCourse() {
       courseDraftState.totalLearningTime || "0",
     );
 
+    const isPct = courseDraftState.promoDiscountType === "%";
+    const discountValueStr = isPct
+      ? courseDraftState.promoDiscountPercent
+      : courseDraftState.promoDiscountThb;
     const promoCode =
       courseDraftState.promoEnabled && courseDraftState.promoCode.trim()
         ? {
             code: courseDraftState.promoCode.trim(),
-            discountType: "PERCENTAGE",
-            discountValue: courseDraftState.promoDiscount
-              ? Number(courseDraftState.promoDiscount)
+            discountType: isPct ? "PERCENTAGE" : "FIXED_AMOUNT",
+            discountValue: discountValueStr
+              ? Number(discountValueStr)
               : 0,
             validFrom: courseDraftState.promoValidFrom || null,
             validUntil: courseDraftState.promoValidUntil || null,
@@ -351,6 +367,7 @@ async function handleUpdateCourse() {
       coverImageUrl,
       trailerVideoUrl,
       attachmentUrl,
+      status,
       promoCode,
       modules,
     };
@@ -373,6 +390,22 @@ async function handleUpdateCourse() {
   } finally {
     isSubmitting.value = false;
   }
+}
+
+function handleSaveClick() {
+  if (isSubmitting.value) return;
+  if (!validatePayload()) return;
+  showStatusModal.value = true;
+}
+
+function handleUpdateAsDraft() {
+  showStatusModal.value = false;
+  void submitUpdateCourse("DRAFT");
+}
+
+function handleUpdateAsPublic() {
+  showStatusModal.value = false;
+  void submitUpdateCourse("PUBLISHED");
 }
 </script>
 
@@ -431,9 +464,9 @@ async function handleUpdateCourse() {
             type="button"
             class="h-15 w-[95px] min-w-[100px] rounded-xl bg-blue-500 px-6 text-[16px] font-bold text-white transition-colors hover:bg-blue-400 active:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed"
             :disabled="isSubmitting"
-            @click="handleUpdateCourse"
+            @click="handleSaveClick"
           >
-            {{ isSubmitting ? "Saving..." : "Edit" }}
+            {{ isSubmitting ? "Saving..." : "Save" }}
           </button>
         </div>
       </div>
@@ -470,7 +503,7 @@ async function handleUpdateCourse() {
                 class="min-w-0 flex-1"
                 label="Total learning time *"
                 placeholder="e.g. 6"
-                supporting-text="Total learning time in hours"
+                supporting-text="Please enter numbers only"
                 :step="1"
                 :min="0"
               />
@@ -495,7 +528,10 @@ async function handleUpdateCourse() {
               <PromoCard
                 v-if="courseDraftState.promoEnabled"
                 v-model:promo-code="courseDraftState.promoCode"
-                v-model:discount="courseDraftState.promoDiscount"
+                v-model:min-purchase="courseDraftState.promoMinPurchase"
+                v-model:discount-type="courseDraftState.promoDiscountType"
+                v-model:discount-thb="courseDraftState.promoDiscountThb"
+                v-model:discount-percent="courseDraftState.promoDiscountPercent"
                 v-model:valid-from="courseDraftState.promoValidFrom"
                 v-model:valid-until="courseDraftState.promoValidUntil"
               />
@@ -598,5 +634,16 @@ async function handleUpdateCourse() {
     type="secondary"
     @left-click="keepEditing"
     @right-click="confirmCancel"
+  />
+
+  <Modal
+    v-model:open="showStatusModal"
+    title="Select course status"
+    message="Choose whether to save as draft or publish this course."
+    left-text="Draft"
+    right-text="Public"
+    type="secondary"
+    @left-click="handleUpdateAsDraft"
+    @right-click="handleUpdateAsPublic"
   />
 </template>

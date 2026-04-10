@@ -11,11 +11,13 @@ const isAdmin = computed(
 </script>
 
 <template>
-  <!-- Admin layout: centered container with sticky sidebar -->
-  <div v-if="isAdmin" class="min-h-screen bg-white">
-    <div class="mx-auto flex max-w-[1920px]">
+  <!-- Admin layout: max-width centered; sidebar follows container (not viewport edge) -->
+  <div v-if="isAdmin" class="min-h-screen w-full bg-white">
+    <div
+      class="mx-auto flex w-full max-w-[1920px]"
+    >
       <Sidebar />
-      <main class="flex-1 min-h-screen">
+      <main class="min-h-screen min-w-0 flex-1">
         <RouterView />
       </main>
     </div>

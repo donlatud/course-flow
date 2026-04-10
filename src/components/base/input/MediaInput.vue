@@ -15,11 +15,17 @@ const props = defineProps<{
   modelValue?: File | null;
   /** Existing uploaded URL — shown when modelValue is null (for edit forms) */
   existingUrl?: string;
+  /**
+   * When true, picking a new file while a file or existing URL is already shown
+   * does not update the model until the parent handles `@replaceConfirm` and sets the model.
+   */
+  confirmBeforeReplace?: boolean;
 }>();
 
 const emit = defineEmits<{
   (e: "update:modelValue", file: File | null): void;
   (e: "change", file: File | null): void;
+  (e: "replaceConfirm", file: File): void;
 }>();
 
 const inputRef = ref<HTMLInputElement | null>(null);
@@ -62,12 +68,21 @@ function openPicker() {
   inputRef.value?.click();
 }
 
+function hasExistingMedia(): boolean {
+  return props.modelValue != null || Boolean(props.existingUrl?.trim());
+}
+
 function onFileChange(ev: Event) {
   const input = ev.target as HTMLInputElement;
   const file = input.files?.[0] ?? null;
+  input.value = "";
+  if (!file) return;
+  if (props.confirmBeforeReplace && hasExistingMedia()) {
+    emit("replaceConfirm", file);
+    return;
+  }
   emit("update:modelValue", file);
   emit("change", file);
-  input.value = "";
 }
 
 function clearFile(ev: Event) {
