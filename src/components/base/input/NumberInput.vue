@@ -12,6 +12,15 @@ const props = defineProps<{
   label?: string;
   placeholder?: string;
   supportingText?: string;
+  /** When set, input shows error state and message (always visible). */
+  errorMessage?: string;
+  /**
+   * When false, min/max are not applied while typing (values stay as entered).
+   * Use with submit-time validation (e.g. percent 0–100). HTML min/max are omitted when false.
+   */
+  clampToMinMax?: boolean;
+  /** Allow a leading minus (for submit-time validation of values &lt; 0). */
+  allowNegative?: boolean;
   step?: number;
   min?: number;
   max?: number;
@@ -51,7 +60,7 @@ watch(
     if (cleaned !== String(val ?? "")) {
       internalValue.value = cleaned;
     }
-  },
+  }
 );
 </script>
 
@@ -68,21 +77,32 @@ watch(
         inputmode="decimal"
         autocomplete="off"
         :placeholder="placeholder ?? '0'"
+        :step="step"
+        :min="props.clampToMinMax !== false ? min : undefined"
+        :max="props.clampToMinMax !== false ? max : undefined"
         :disabled="disabled"
-        class="h-12 w-full rounded-[10px] border bg-white px-4
-               text-body2 text-gray-900 placeholder:text-gray-500
-               shadow-none ring-0 transition-all duration-200
-               border-gray-300
-               focus-visible:border-orange-500 focus-visible:ring-2 focus-visible:ring-orange-500/20
-               disabled:bg-gray-200 disabled:border-gray-400 disabled:text-gray-600 disabled:cursor-not-allowed"
+        :aria-invalid="hasError || undefined"
+        :class="cn(
+          'h-12 w-full rounded-[10px] border bg-white px-4',
+          'text-body2 text-gray-900 placeholder:text-gray-500',
+          'shadow-none ring-0 transition-all duration-200',
+          hasError
+            ? 'border-(--color-purple) ring-2 ring-purple/20'
+            : 'border-gray-300 focus-visible:border-orange-500 focus-visible:ring-2 focus-visible:ring-orange-500/20',
+          'disabled:bg-gray-200 disabled:border-gray-400 disabled:text-gray-600 disabled:cursor-not-allowed',
+        )"
         @focus="isFocused = true"
         @blur="isFocused = false"
       />
 
     </div>
 
+    <p v-if="hasError" class="text-body4 text-(--color-purple) mt-0.5">
+      {{ errorMessage }}
+    </p>
+
     <p
-      v-if="supportingText && isFocused"
+      v-else-if="supportingText && isFocused"
       class="text-body4 text-orange-500"
     >
       {{ supportingText }}

@@ -115,7 +115,7 @@ function onRowClick(id: string) {
   <div :class="cn('flex w-full flex-col gap-1', props.class)">
     <label
       v-if="label"
-      class="text-body3 font-medium text-gray-800"
+      class="text-body3 font-medium text-gray-700"
     >
       {{ label }}
     </label>
@@ -132,7 +132,7 @@ function onRowClick(id: string) {
               'focus-visible:border-orange-500 focus-visible:ring-2 focus-visible:ring-orange-500/20',
               'data-[state=open]:border-orange-500 data-[state=open]:ring-2 data-[state=open]:ring-orange-500/20',
               disabled &&
-                'pointer-events-none cursor-not-allowed border-gray-400 bg-gray-200 text-gray-600 opacity-100',
+                'pointer-events-none cursor-not-allowed border-gray-600 bg-blue-100 text-gray-700 opacity-100',
             )
           "
         >
@@ -143,12 +143,12 @@ function onRowClick(id: string) {
               <span
                 v-for="chip in selectedChips"
                 :key="chip.id"
-                class="inline-flex max-w-full items-center gap-1 rounded-full border border-[#8DADE0] bg-[#E5ECF8] px-2.5 py-0.5 text-body2 text-gray-900"
+                class="inline-flex max-w-full items-center gap-1 rounded-[8px] border border-blue-300 bg-blue-100 px-2.5 py-0.5 text-body2 text-gray-900"
               >
                 <span class="truncate">{{ chip.title }}</span>
                 <button
                   type="button"
-                  class="inline-flex shrink-0 cursor-pointer rounded p-0.5 text-[#646D89] hover:bg-[#2F5FAC]/10 hover:text-[#2F5FAC]"
+                  class="inline-flex shrink-0 cursor-pointer rounded p-0.5 text-blue-500 hover:bg-blue-100 hover:text-blue-500"
                   @click.stop="removeChip(chip.id, $event)"
                 >
                   <X class="h-3.5 w-3.5" stroke-width="2.5" />
@@ -157,11 +157,11 @@ function onRowClick(id: string) {
             </template>
             <span
               v-else
-              class="text-body2 text-gray-500"
+              class="text-body2 text-gray-700"
             >{{ placeholder }}</span>
           </div>
           <ChevronDown
-            class="mt-0.5 h-5 w-5 shrink-0 text-[#9AA1B9] transition-transform duration-200"
+            class="mt-0.5 h-5 w-5 shrink-0 text-gray-700 transition-transform duration-200"
             :class="{ '-rotate-180': open }"
           />
         </div>
@@ -172,45 +172,45 @@ function onRowClick(id: string) {
         :side-offset="8"
         :class="
           cn(
-            'z-100 max-h-[min(18rem,70vh)] w-[var(--reka-popover-trigger-width)] overflow-hidden rounded-[10px] border border-[#9AA1B9] bg-white p-0 shadow-2',
+            'z-100 max-h-[min(18rem,70vh)] w-(--reka-popover-trigger-width) overflow-hidden rounded-[10px] border border-gray-600 bg-white p-0 shadow-2',
           )
         "
       >
         <div class="max-h-[min(18rem,70vh)] overflow-y-auto py-1">
           <div
             v-if="options.length === 0"
-            class="px-4 py-3 text-body2 text-gray-500"
+            class="px-4 py-3 text-body2 text-gray-700"
           >
             No courses match minimum purchase
           </div>
 
           <template v-else>
             <div
-              class="flex w-full cursor-pointer items-center gap-3 px-3 py-2.5 text-left text-body2 transition-colors hover:bg-[#E5ECF8]"
+              class="flex w-full cursor-pointer items-center gap-3 px-3 py-2.5 text-left text-body2 transition-colors hover:bg-blue-100"
               @click="toggleAllFromRow"
             >
               <Checkbox
                 :model-value="allCheckboxModel"
-                class="border-[#9AA1B9] data-[state=checked]:border-[#2F5FAC]! data-[state=checked]:bg-[#2F5FAC]!"
+                class="border-gray-600 data-[state=checked]:border-blue-500! data-[state=checked]:bg-blue-500!"
                 @click.stop
                 @update:model-value="onAllUpdate"
               />
-              <span class="text-gray-900">All courses</span>
+              <span class="text-gray-700">All courses</span>
             </div>
 
             <div
               v-for="opt in options"
               :key="opt.id"
-              class="flex w-full cursor-pointer items-center gap-3 px-3 py-2.5 text-left text-body2 transition-colors hover:bg-[#E5ECF8]"
+              class="flex w-full cursor-pointer items-center gap-3 px-3 py-2.5 text-left text-body2 transition-colors hover:bg-blue-100"
               @click="onRowClick(opt.id)"
             >
               <Checkbox
                 :model-value="isSelected(opt.id)"
-                class="border-[#9AA1B9] data-[state=checked]:border-[#2F5FAC]! data-[state=checked]:bg-[#2F5FAC]!"
+                class="border-gray-600 data-[state=checked]:border-blue-500! data-[state=checked]:bg-blue-500!"
                 @click.stop
                 @update:model-value="(v) => setSelected(opt.id, v === true)"
               />
-              <span class="text-[#646D89]">{{ opt.listLabel }}</span>
+              <span class="text-gray-700">{{ opt.listLabel }}</span>
             </div>
           </template>
         </div>
