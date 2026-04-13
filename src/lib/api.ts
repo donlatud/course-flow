@@ -54,13 +54,38 @@ api.interceptors.request.use(async (config) => {
  * Phase D: JWT หมดอายุ / ไม่มีสิทธิ์ — ส่งไป login พร้อมกลับมาที่หน้าเดิมหลัง sign-in
  * ไม่ redirect บน /login, /register, /admin/login — ให้แต่ละหน้าแสดง error เอง
  * (แอดมินใช้คู่กับ `skipAuthRedirect` บน request สำคัญ — เผื่อมีหลาย request บนหน้าเดียวกัน)
+ *
+ * ก่อน redirect: ลอง `refreshSession()` แล้ว retry request หนึ่งครั้ง — ลดการเด้ง login บ่อย
+ * เมื่อ access token หมดอายุแต่ refresh token ยังใช้ได้ (Navbar ยังโชว์ชื่อเพราะ session ใน Supabase ยังอยู่)
  */
 api.interceptors.response.use(
   (response) => response,
-  (error: unknown) => {
-    const status = axios.isAxiosError(error) ? error.response?.status : undefined;
+  async (error) => {
+    const status = axios.isAxiosError(error) ? error.response?.status : undefined
     if (status !== 401) {
       return Promise.reject(error);
+    }
+
+    const originalRequest = error.config as RequestWithAuthRetry | undefined
+    if (originalRequest && !originalRequest._authRetry) {
+      originalRequest._authRetry = true
+      const { data: refreshed, error: refreshErr } = await supabase.auth.refreshSession()
+      const newToken = refreshed.session?.access_token
+      if (!refreshErr && newToken) {
+        originalRequest.headers.Authorization = `Bearer ${newToken}`
+        return api.request(originalRequest)
+      }
+    }
+
+    const originalRequest = error.config as RequestWithAuthRetry | undefined
+    if (originalRequest && !originalRequest._authRetry) {
+      originalRequest._authRetry = true
+      const { data: refreshed, error: refreshErr } = await supabase.auth.refreshSession()
+      const newToken = refreshed.session?.access_token
+      if (!refreshErr && newToken) {
+        originalRequest.headers.Authorization = `Bearer ${newToken}`
+        return api.request(originalRequest)
+      }
     }
 
     const ax = error as {

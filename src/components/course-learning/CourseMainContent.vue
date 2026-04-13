@@ -147,15 +147,23 @@ const videoInitialResumeSeconds = computed(() => activeMaterial.value?.lastPosit
         :video-initial-resume-seconds="videoInitialResumeSeconds"
       />
       
-      <!-- Assignment Section -->
+      <!-- Assignment Section (only when an assignment exists; avoid a dummy form that ignores submit) -->
       <SkeletonAssignment v-if="assignmentsLoading && !activeAssignment" />
+      <section
+        v-else-if="assignmentsError"
+        class="rounded-[8px] bg-gray-100 px-4 py-3 text-body4 text-gray-900 lg:mt-[47px]"
+        role="alert"
+      >
+        {{ assignmentsError }}
+      </section>
       <AssignmentSection
-        v-else
+        v-else-if="activeAssignment"
         v-model="assignmentText"
         :status="assignmentStatus"
-        :submitted="assignmentSubmitted || Boolean(activeAssignment?.submitted)"
-        :title="activeAssignment?.title"
-        :prompt="activeAssignment?.description"
+        :submitted="assignmentSubmitted || Boolean(activeAssignment.submitted)"
+        :title="activeAssignment.title"
+        :prompt="activeAssignment.description"
+        :solution="activeAssignment.solution ?? null"
         :loading="assignmentsLoading"
         :error="assignmentSubmitError || assignmentsError"
         :submitting="assignmentSubmitting"

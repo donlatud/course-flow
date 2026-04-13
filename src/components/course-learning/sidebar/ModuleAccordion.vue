@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { ref, watch } from "vue"
 import {
   Accordion,
   AccordionContent,
@@ -12,7 +13,7 @@ const props = withDefaults(
   defineProps<{
     modules: CourseModule[]
     activeLessonId: string
-    /** Accordion `default-value` when none stored (first open section). */
+    /** Fallback open section when `activeLessonId` matches no lesson. */
     defaultOpenModuleId?: string
   }>(),
   { defaultOpenModuleId: undefined },
@@ -22,11 +23,30 @@ const emit = defineEmits<{
   "update:activeLessonId": [id: string]
 }>()
 
-function resolveDefaultOpen(): string {
-  if (props.defaultOpenModuleId)
-    return props.defaultOpenModuleId
-  return props.modules[0]?.id ?? ""
+const openModuleId = ref<string | undefined>(undefined)
+
+function moduleIdForActiveLesson(): string | undefined {
+  const { activeLessonId, modules, defaultOpenModuleId } = props
+  if (!modules.length)
+    return undefined
+  if (activeLessonId) {
+    for (const m of modules) {
+      if (m.lessons.some((l) => l.id === activeLessonId))
+        return m.id
+    }
+  }
+  if (defaultOpenModuleId)
+    return defaultOpenModuleId
+  return modules[0]?.id
 }
+
+watch(
+  () => [props.activeLessonId, props.modules, props.defaultOpenModuleId] as const,
+  () => {
+    openModuleId.value = moduleIdForActiveLesson()
+  },
+  { immediate: true, deep: true },
+)
 
 function onSelectLesson(id: string) {
   emit("update:activeLessonId", id)
@@ -35,10 +55,10 @@ function onSelectLesson(id: string) {
 
 <template>
   <Accordion
+    v-model="openModuleId"
     type="single"
     class="w-full"
     :collapsible="true"
-    :default-value="resolveDefaultOpen()"
   >
     <AccordionItem
       v-for="mod in modules"

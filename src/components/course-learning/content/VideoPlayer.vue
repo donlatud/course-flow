@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue"
 import { useVideoProgress } from "@/composables/useVideoProgress"
-import { useAutoNextLesson } from "@/composables/useAutoNextLesson"
 import { useKeyboardShortcuts } from "@/composables/useKeyboardShortcuts"
 import { useCourseLearning } from "@/composables/useCourseLearning"
+import type { MaterialProgressStatus } from "@/types/course-learning/course-learning-api"
 
 const props = defineProps<{
   /**
@@ -25,7 +25,23 @@ const maxRetries = 3
 
 const trackingEnabled = computed(() => Boolean(props.enrollmentId && props.materialId && props.src))
 
-const { videoEnded } = useVideoProgress({
+const { goNext, syncMaterialProgressFromPlayer } = useCourseLearning()
+
+function onVideoProgressSaved(payload: {
+  status: MaterialProgressStatus
+  lastPosition: number
+}) {
+  const mid = props.materialId
+  if (!mid) return
+  const completed = payload.status === "COMPLETED"
+  syncMaterialProgressFromPlayer(mid, {
+    status: payload.status,
+    lastPosition: payload.lastPosition,
+    completed,
+  })
+}
+
+useVideoProgress({
   videoRef: videoEl,
   enabled: trackingEnabled,
   enrollmentId: computed(() => props.enrollmentId ?? null),
@@ -33,12 +49,7 @@ const { videoEnded } = useVideoProgress({
   initialResumeSeconds: computed(() => props.initialResumeSeconds ?? null),
   saveIntervalMs: 10_000,
   minPositionDeltaSeconds: 3,
-})
-
-const { hasNext, goNext } = useCourseLearning()
-
-useAutoNextLesson(videoEnded, hasNext, () => {
-  void goNext()
+  onProgressSaved: onVideoProgressSaved,
 })
 
 useKeyboardShortcuts({
