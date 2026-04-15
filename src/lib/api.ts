@@ -6,22 +6,16 @@ import {
   getAdminAccessTokenFallback,
 } from "@/lib/adminSession";
 
-/**
- * Empty base URL → requests are same-origin (e.g. Vite dev: `/api` → proxy to backend).
- * Set `VITE_API_BASE_URL` (e.g. `http://localhost:8080`) only when you need a fixed API host.
- */
-function resolveApiBaseUrl(): string {
-  const raw = import.meta.env.VITE_API_BASE_URL as string | undefined;
-  if (raw === undefined || raw === null) return "";
-  return String(raw).trim();
-}
+const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8080";
 
 export const api = axios.create({
-  baseURL: resolveApiBaseUrl(),
+  baseURL: BASE_URL,
   headers: {
     "Content-Type": "application/json",
   },
 });
+
+type ApiRequestConfig = InternalAxiosRequestConfig & { skipAuthRedirect?: boolean };
 
 function setBearer(
   config: InternalAxiosRequestConfig,
@@ -37,7 +31,7 @@ function setBearer(
   }
 }
 
-/** Resolve access token: Supabase session → localStorage fallback → refreshSession */
+/** Supabase session → admin localStorage fallback → refreshSession (แอดมิน / race หลัง login) */
 async function resolveAccessToken(): Promise<string | undefined> {
   const { data: s1 } = await supabase.auth.getSession();
   let token = s1.session?.access_token;
@@ -56,33 +50,44 @@ api.interceptors.request.use(async (config) => {
   return config;
 });
 
-/** On 401: retry once after refreshSession (fixes expired JWT during long admin flows / uploads). */
+/**
+ * Phase D: JWT หมดอายุ / ไม่มีสิทธิ์ — ส่งไป login พร้อมกลับมาที่หน้าเดิมหลัง sign-in
+ * ไม่ redirect บน /login, /register, /admin/login — ให้แต่ละหน้าแสดง error เอง
+ * (แอดมินใช้คู่กับ `skipAuthRedirect` บน request สำคัญ — เผื่อมีหลาย request บนหน้าเดียวกัน)
+ */
 api.interceptors.response.use(
-  (res) => res,
-  async (err: unknown) => {
-    const ax = err as {
-      config?: InternalAxiosRequestConfig & { _retry?: boolean };
+  (response) => response,
+  (error: unknown) => {
+    const status = axios.isAxiosError(error) ? error.response?.status : undefined;
+    if (status !== 401) {
+      return Promise.reject(error);
+    }
+
+    const ax = error as {
+      config?: ApiRequestConfig;
       response?: { status?: number };
     };
-    const status = ax.response?.status;
     const config = ax.config;
     const url = String(config?.url ?? "");
+
     if (url.includes("/api/auth/")) {
-      if (status === 401) clearAdminAccessTokenFallback();
-      return Promise.reject(err);
-    }
-    if (status === 401 && config && !config._retry) {
-      config._retry = true;
-      const { data } = await supabase.auth.refreshSession();
-      const token = data.session?.access_token ?? getAdminAccessTokenFallback() ?? undefined;
-      if (token) {
-        setBearer(config, token);
-        return api.request(config);
-      }
-    }
-    if (status === 401) {
       clearAdminAccessTokenFallback();
+      return Promise.reject(error);
     }
-    return Promise.reject(err);
+
+    if (config?.skipAuthRedirect) {
+      return Promise.reject(error);
+    }
+
+    const path = window.location.pathname;
+    if (path === "/login" || path === "/register" || path === "/admin/login") {
+      return Promise.reject(error);
+    }
+
+    const fullPath = path + window.location.search;
+    const redirect = encodeURIComponent(fullPath);
+    const loginPath = path.startsWith("/admin") ? "/admin/login" : "/login";
+    window.location.assign(`${window.location.origin}${loginPath}?redirect=${redirect}`);
+    return Promise.reject(error);
   },
 );
