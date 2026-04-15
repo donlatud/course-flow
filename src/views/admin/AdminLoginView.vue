@@ -50,8 +50,7 @@ const handleLogin = async () => {
     const tokens = parseAdminLoginTokens(body);
     if (!tokens) {
       isError.value = true;
-      errorMessage.value =
-        "Invalid server response (missing access token). Confirm API URL and backend.";
+      errorMessage.value = "Login failed. Please try again.";
       return;
     }
     const { accessToken, refreshToken } = tokens;
@@ -83,7 +82,7 @@ const handleLogin = async () => {
       Boolean(session?.access_token) || Boolean(getAdminAccessTokenFallback());
     if (!canProceed) {
       isError.value = true;
-      errorMessage.value = "Could not start session.";
+      errorMessage.value = "Login failed. Please try again.";
       return;
     }
 

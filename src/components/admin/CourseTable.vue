@@ -288,12 +288,12 @@ function ariaSortFor(key: CourseSortKey): "ascending" | "descending" | "none" {
             <div class="flex justify-center gap-3">
               <button
                 type="button"
-                class="inline-flex cursor-pointer items-center justify-center rounded-md p-1 transition hover:bg-yellow-50 hover:opacity-90 active:opacity-100"
-                aria-label="Edit course"
-                @click="emit('edit', course.id)"
+                class="inline-flex cursor-pointer items-center justify-center rounded-md p-1 opacity-50"
+                aria-label="Delete course"
+                disabled
               >
                 <img
-                  :src="iconEdit"
+                  :src="iconDelete"
                   alt=""
                   class="pointer-events-none h-5 w-5"
                   width="20"
@@ -302,12 +302,12 @@ function ariaSortFor(key: CourseSortKey): "ascending" | "descending" | "none" {
               </button>
               <button
                 type="button"
-                class="inline-flex cursor-pointer  items-center justify-center rounded-md p-1 opacity-50"
-                aria-label="Delete course"
-                disabled
+                class="inline-flex cursor-pointer items-center justify-center rounded-md p-1 transition hover:bg-yellow-50 hover:opacity-90 active:opacity-100"
+                aria-label="Edit course"
+                @click="emit('edit', course.id)"
               >
                 <img
-                  :src="iconDelete"
+                  :src="iconEdit"
                   alt=""
                   class="pointer-events-none h-5 w-5"
                   width="20"

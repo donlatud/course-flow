@@ -3,7 +3,6 @@ import { computed, nextTick, onMounted, ref, watch } from "vue";
 import { onBeforeRouteLeave, useRouter, useRoute } from "vue-router";
 import type { NavigationGuardNext } from "vue-router";
 import { ArrowLeft, GripVertical } from "lucide-vue-next";
-import iconDelete from "@/assets/icon-delete.svg";
 import CustomInput from "@/components/base/input/CustomInput.vue";
 import MediaInput from "@/components/base/input/MediaInput.vue";
 import Modal from "@/components/base/modal/Modal.vue";
@@ -572,25 +571,18 @@ function confirmSaveLesson() {
                       </div>
                     </div>
 
-                    <div class="flex flex-col items-end gap-4">
+                    <div class="flex flex-col">
                       <button
                         type="button"
-                        class="inline-flex items-center gap-2 rounded-md px-1 py-0.5 text-body3 font-medium transition-colors"
+                        class="inline-flex items-center gap-2 rounded-md px-1 text-body3 font-medium transition-colors"
                         :class="
                           subLessons.length === 1
                             ? 'cursor-not-allowed text-gray-300'
-                            : 'cursor-pointer text-red-400 hover:bg-red-50 hover:text-red-600 active:bg-red-100/80'
+                            : 'cursor-pointer text-blue-400 hover:bg-blue-50 hover:text-blue-600 active:bg-red-100/80'
                         "
                         :disabled="subLessons.length === 1"
                         @click="requestRemoveSubLesson(subLesson.id)"
                       >
-                        <img
-                          :src="iconDelete"
-                          alt=""
-                          class="pointer-events-none h-4 w-4 shrink-0"
-                          width="16"
-                          height="16"
-                        />
                         Delete
                       </button>
                     </div>

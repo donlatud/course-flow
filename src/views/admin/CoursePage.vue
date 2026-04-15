@@ -189,9 +189,30 @@ function goToCourseEdit(courseId: string) {
         <div class="mx-auto w-full">
           <div
             v-if="isLoading"
-            class="py-10 text-center text-body3 text-gray-500"
+            class="overflow-hidden rounded-xl border border-gray-100 bg-white shadow-sm"
           >
-            Loading courses...
+            <div class="grid grid-cols-[80px_1.6fr_0.8fr_0.8fr_0.9fr_0.8fr] border-b border-gray-100 bg-gray-300 px-6 py-4">
+              <div
+                v-for="n in 6"
+                :key="`head-skeleton-${n}`"
+                class="h-4 w-24 animate-pulse rounded bg-gray-200"
+              />
+            </div>
+            <div
+              v-for="row in 8"
+              :key="`row-skeleton-${row}`"
+              class="grid grid-cols-[80px_1.6fr_0.8fr_0.8fr_0.9fr_0.8fr] items-center border-b border-gray-50 px-6 py-5 last:border-b-0"
+            >
+              <div class="h-5 w-6 animate-pulse rounded bg-gray-200" />
+              <div class="flex items-center gap-3">
+                <div class="h-9 w-14 animate-pulse rounded-md bg-gray-200" />
+                <div class="h-4 w-48 animate-pulse rounded bg-gray-200" />
+              </div>
+              <div class="h-4 w-24 animate-pulse rounded bg-gray-200" />
+              <div class="h-4 w-20 animate-pulse rounded bg-gray-200" />
+              <div class="h-6 w-24 animate-pulse rounded-full bg-gray-200" />
+              <div class="h-4 w-14 animate-pulse rounded bg-gray-200" />
+            </div>
           </div>
           <div
             v-else-if="errorMessage"
