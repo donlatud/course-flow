@@ -9,6 +9,7 @@ import MediaInput from "@/components/base/input/MediaInput.vue";
 import PromoCard from "@/components/admin/PromoCard.vue";
 import LessonTable from "@/components/admin/LessonTable.vue";
 import Modal from "@/components/base/modal/Modal.vue";
+import SubmitProgressOverlay from "@/components/base/SubmitProgressOverlay.vue";
 import { Textarea } from "@/components/ui/textarea";
 import { appToast } from "@/components/base/toast";
 import { cn } from "@/lib/utils";
@@ -514,7 +515,7 @@ function handleUpdateAsPublic() {
             :disabled="isSubmitting"
             @click="handleSaveClick"
           >
-            {{ isSubmitting ? "Saving..." : "Save" }}
+            Save
           </button>
         </div>
       </div>
@@ -672,6 +673,12 @@ function handleUpdateAsPublic() {
       </div>
     </template>
   </section>
+
+  <SubmitProgressOverlay
+    :visible="isSubmitting"
+    title="Saving course"
+    description="Uploading files and updating your course. This may take a moment."
+  />
 
   <Modal
     v-model:open="showCancelModal"
