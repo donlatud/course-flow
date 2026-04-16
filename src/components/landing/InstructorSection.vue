@@ -1,9 +1,9 @@
 <template>
-  <section class="relative overflow-hidden px-4 py-16 flex flex-col gap-16 md:h-205.75 md:justify-center">
+  <section class="relative overflow-hidden py-16 flex flex-col gap-16 md:h-205.75 md:justify-center">
     <h2 class="text-headline3 md:text-headline2 font-medium text-center">
       Our Professional Instructors
     </h2>
-    <div class="flex flex-col md:flex-row md:justify-center md:gap-8 gap-8">
+    <div class="flex flex-col md:flex-row md:justify-between md:px-40 gap-8">
     <InstructorCard
       v-for="(item, i) in items"
       :key="i"
