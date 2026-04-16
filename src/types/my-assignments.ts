@@ -44,13 +44,12 @@ export type CourseAssignmentDto = {
 
 export type CourseAssignmentListResponse = CourseAssignmentDto[]
 
-export type AssignmentDisplayStatus = "pending" | "in_progress" | "submitted" | "overdue"
+export type AssignmentDisplayStatus = "pending" | "in_progress" | "submitted"
 
 export function computeAssignmentDisplayStatus(
   assignment: CourseAssignmentDto,
 ): AssignmentDisplayStatus {
   if (assignment.submitted) return "submitted"
-  if (assignment.endDate && new Date(assignment.endDate) < new Date()) return "overdue"
   if (assignment.submissionStatus === "IN_PROGRESS") return "in_progress"
   return "pending"
 }

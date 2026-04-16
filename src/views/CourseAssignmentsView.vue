@@ -8,6 +8,7 @@ import AssignmentCard from "@/components/my-assignments/AssignmentCard.vue"
 import type { CourseAssignmentDto } from "@/types/my-assignments"
 import { computeAssignmentDisplayStatus } from "@/types/my-assignments"
 import { submitAssignment } from "@/services/courseLearningApi"
+import { getCourseAssignments } from "@/services/myAssignmentsApi"
 
 type TabValue = "all" | "inprogress" | "submitted"
 
@@ -26,76 +27,6 @@ const tabs = [
   { value: "submitted", label: "Submitted" },
 ]
 
-// Mock data — replace with getCourseAssignments(courseId) in Phase 5
-const MOCK_ASSIGNMENTS: CourseAssignmentDto[] = [
-  {
-    assignmentId: "a1",
-    title: "What are the 4 elements of service design?",
-    description: null,
-    startDate: null,
-    endDate: null,
-    submitted: false,
-    submissionId: null,
-    submissionStatus: null,
-    submittedAt: null,
-    submittedAnswer: null,
-    moduleId: "m1",
-    moduleName: "Introduction: 4 Levels of Service Design in an Organization",
-    courseId: courseId.value || "33333333-3333-3333-3333-333333333333",
-    courseTitle: "Service Design Essentials",
-  },
-  {
-    assignmentId: "a2",
-    title: "What is service system design?",
-    description:
-      "At Service Systems Design, you will learn how to plan and organize people, infrastructure, communication, media and components of a service, in order to improve its quality. The interaction between service provider and users and the users' experience.",
-    startDate: null,
-    endDate: null,
-    submitted: true,
-    submissionId: "s2",
-    submissionStatus: "SUBMITTED",
-    submittedAt: "2026-04-01T10:00:00Z",
-    submittedAnswer:
-      "At Service Systems Design, you will learn how to plan and organize people, infrastructure, communication, media and components of a service, in order to improve its quality. The interaction between service provider and users and the users' experience.",
-    moduleId: "m2",
-    moduleName: "Introduction: What is Service Design ?",
-    courseId: courseId.value || "33333333-3333-3333-3333-333333333333",
-    courseTitle: "Service Design Essentials",
-  },
-  {
-    assignmentId: "a3",
-    title: "Difference between Service Design vs. UX vs. UI vs. Design Thinking",
-    description: null,
-    startDate: null,
-    endDate: null,
-    submitted: false,
-    submissionId: "s3",
-    submissionStatus: "IN_PROGRESS",
-    submittedAt: null,
-    submittedAnswer: null,
-    moduleId: "m3",
-    moduleName: "Introduction: Service Design vs. UX vs. UI vs. Design Thinking",
-    courseId: courseId.value || "33333333-3333-3333-3333-333333333333",
-    courseTitle: "Service Design Essentials",
-  },
-  {
-    assignmentId: "a4",
-    title: "Introduce yourself",
-    description: null,
-    startDate: null,
-    endDate: "2025-01-01T00:00:00Z",
-    submitted: false,
-    submissionId: null,
-    submissionStatus: null,
-    submittedAt: null,
-    submittedAnswer: null,
-    moduleId: "m4",
-    moduleName: "Introduction: Getting to Know You",
-    courseId: courseId.value || "33333333-3333-3333-3333-333333333333",
-    courseTitle: "Service Design Essentials",
-  },
-]
-
 const filteredAssignments = computed(() => {
   if (activeTab.value === "all") return assignments.value
 
@@ -106,6 +37,21 @@ const filteredAssignments = computed(() => {
     return true
   })
 })
+
+async function fetchAssignments() {
+  const cid = courseId.value
+  if (!cid.trim()) return
+  isLoading.value = true
+  try {
+    loadError.value = null
+    assignments.value = await getCourseAssignments(cid)
+  } catch (e) {
+    loadError.value = e instanceof Error ? e.message : "Could not load assignments"
+    assignments.value = []
+  } finally {
+    isLoading.value = false
+  }
+}
 
 async function handleSubmit(assignmentId: string, answer: string) {
   if (submittingId.value === assignmentId) return
@@ -130,18 +76,7 @@ async function handleSubmit(assignmentId: string, answer: string) {
   }
 }
 
-onMounted(() => {
-  // TODO Phase 5: replace with getCourseAssignments(courseId.value)
-  try {
-    loadError.value = null
-    assignments.value = MOCK_ASSIGNMENTS
-  } catch (e) {
-    loadError.value = e instanceof Error ? e.message : "Could not load assignments"
-    assignments.value = []
-  } finally {
-    isLoading.value = false
-  }
-})
+onMounted(fetchAssignments)
 </script>
 
 <template>
