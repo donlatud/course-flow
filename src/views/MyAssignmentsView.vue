@@ -7,65 +7,7 @@ import AppFooter from "@/components/shared/AppFooter.vue"
 import UserProfileCard from "@/components/my-course/UserProfileCard.vue"
 import CourseCard from "@/components/courses/CourseCard.vue"
 import type { MyAssignmentCourseDto } from "@/types/my-assignments"
-
-// Mock data — replace with getMyAssignmentCourses() in Phase 5
-const MOCK_COURSES: MyAssignmentCourseDto[] = [
-  {
-    courseId: "33333333-3333-3333-3333-333333333333",
-    courseTitle: "Service Design Essentials",
-    courseDescription: "Lorem ipsum dolor sit amet, conse ctetur adispicing edit.",
-    coverImageUrl: null,
-    lessonCount: 6,
-    totalHours: 6,
-    totalAssignments: 4,
-    submittedAssignments: 2,
-    assignmentStatus: "IN_PROGRESS",
-  },
-  {
-    courseId: "44444444-4444-4444-4444-444444444444",
-    courseTitle: "Software Developer",
-    courseDescription: "Lorem ipsum dolor sit amet, conse ctetur adispicing edit.",
-    coverImageUrl: null,
-    lessonCount: 8,
-    totalHours: 8,
-    totalAssignments: 3,
-    submittedAssignments: 3,
-    assignmentStatus: "COMPLETED",
-  },
-  {
-    courseId: "55555555-5555-5555-5555-555555555555",
-    courseTitle: "UX/UI Design Beginner",
-    courseDescription: "Lorem ipsum dolor sit amet, conse ctetur adispicing edit.",
-    coverImageUrl: null,
-    lessonCount: 6,
-    totalHours: 6,
-    totalAssignments: 5,
-    submittedAssignments: 1,
-    assignmentStatus: "IN_PROGRESS",
-  },
-  {
-    courseId: "66666666-6666-6666-6666-666666666666",
-    courseTitle: "Service Design Essentials",
-    courseDescription: "Lorem ipsum dolor sit amet, conse ctetur adispicing edit.",
-    coverImageUrl: null,
-    lessonCount: 6,
-    totalHours: 6,
-    totalAssignments: 4,
-    submittedAssignments: 4,
-    assignmentStatus: "COMPLETED",
-  },
-  {
-    courseId: "77777777-7777-7777-7777-777777777777",
-    courseTitle: "UX/UI Design Beginner",
-    courseDescription: "Lorem ipsum dolor sit amet, conse ctetur adispicing edit.",
-    coverImageUrl: null,
-    lessonCount: 6,
-    totalHours: 6,
-    totalAssignments: 2,
-    submittedAssignments: 0,
-    assignmentStatus: "IN_PROGRESS",
-  },
-]
+import { getMyAssignmentCourses } from "@/services/myAssignmentsApi"
 
 const { userProfile } = useAuth()
 
@@ -99,11 +41,11 @@ const completedCount = computed(
 const displayName = computed(() => userProfile.value?.fullName ?? "")
 const profilePic = computed(() => userProfile.value?.profilePictureUrl ?? undefined)
 
-onMounted(() => {
-  // TODO Phase 5: replace with getMyAssignmentCourses() API call
+onMounted(async () => {
+  isLoading.value = true
   try {
     loadError.value = null
-    courses.value = MOCK_COURSES
+    courses.value = await getMyAssignmentCourses()
   } catch (e) {
     loadError.value = e instanceof Error ? e.message : "Could not load assignments"
     courses.value = []
