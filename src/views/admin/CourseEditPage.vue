@@ -9,6 +9,7 @@ import MediaInput from "@/components/base/input/MediaInput.vue";
 import PromoCard from "@/components/admin/PromoCard.vue";
 import LessonTable from "@/components/admin/LessonTable.vue";
 import Modal from "@/components/base/modal/Modal.vue";
+import SubmitProgressOverlay from "@/components/base/SubmitProgressOverlay.vue";
 import { Textarea } from "@/components/ui/textarea";
 import { appToast } from "@/components/base/toast";
 import { cn } from "@/lib/utils";
@@ -48,6 +49,42 @@ const isLoading = ref(true);
 const loadError = ref(false);
 let skipLeaveGuard = false;
 let guardNext: NavigationGuardNext | null = null;
+/** JSON snapshot after load; leave without modal when unchanged */
+let baselineSnapshot = "";
+
+function buildCourseEditSnapshot(): string {
+  const s = courseDraftState;
+  const modules = s.lessons.map((lesson) => ({
+    name: lesson.name.trim(),
+    subLessons: lesson.subLessons.map((sub) => ({
+      name: sub.name.trim(),
+      fileType: sub.fileType,
+      detail: sub.detail.trim(),
+      uploadedUrl: sub.uploadedUrl ?? null,
+    })),
+  }));
+  return JSON.stringify({
+    courseStorageFolderId: s.courseStorageFolderId,
+    courseName: s.courseName.trim(),
+    coursePrice: s.coursePrice.trim(),
+    totalLearningTime: s.totalLearningTime.trim(),
+    courseSummary: s.courseSummary.trim(),
+    courseDetail: s.courseDetail.trim(),
+    coverImageUrl: s.coverImageUrl ?? null,
+    hasCoverFile: s.coverImageFile !== null,
+    hasTrailerFile: s.trailerVideoFile !== null,
+    hasAttachFile: s.attachmentFile !== null,
+    promoEnabled: s.promoEnabled,
+    promoCode: s.promoCode.trim(),
+    promoMinPurchase: s.promoMinPurchase.trim(),
+    promoDiscountType: s.promoDiscountType,
+    promoDiscountThb: s.promoDiscountThb.trim(),
+    promoDiscountPercent: s.promoDiscountPercent.trim(),
+    promoValidFrom: s.promoValidFrom.trim(),
+    promoValidUntil: s.promoValidUntil.trim(),
+    modules,
+  });
+}
 
 // persisted across lesson sub-navigations (not reset on early-return)
 const originalCourseName = ref(localStorage.getItem(`edit_originalName_${route.params.courseId}`) ?? "");
@@ -80,6 +117,13 @@ onBeforeRouteLeave((to, _from, next) => {
   }
   const targetRouteName = typeof to.name === "string" ? to.name : "";
   if (courseEditFlowRoutes.has(targetRouteName)) {
+    next();
+    return;
+  }
+  if (
+    baselineSnapshot &&
+    buildCourseEditSnapshot() === baselineSnapshot
+  ) {
     next();
     return;
   }
@@ -123,6 +167,9 @@ async function loadCourse() {
   ) {
     isLoading.value = false;
     loadError.value = false;
+    if (!baselineSnapshot) {
+      baselineSnapshot = buildCourseEditSnapshot();
+    }
     return;
   }
 
@@ -172,6 +219,8 @@ async function loadCourse() {
     });
     courseDraftState.nextLessonId = (data.modules?.length ?? 0) + 1;
     courseDraftState.nextSubLessonId = nextSubId;
+
+    baselineSnapshot = buildCourseEditSnapshot();
   } catch {
     loadError.value = true;
   } finally {
@@ -466,7 +515,7 @@ function handleUpdateAsPublic() {
             :disabled="isSubmitting"
             @click="handleSaveClick"
           >
-            {{ isSubmitting ? "Saving..." : "Save" }}
+            Save
           </button>
         </div>
       </div>
@@ -624,6 +673,12 @@ function handleUpdateAsPublic() {
       </div>
     </template>
   </section>
+
+  <SubmitProgressOverlay
+    :visible="isSubmitting"
+    title="Saving course"
+    description="Uploading files and updating your course. This may take a moment."
+  />
 
   <Modal
     v-model:open="showCancelModal"

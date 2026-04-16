@@ -1,10 +1,27 @@
 <script setup lang="ts">
-import { ref } from "vue";
-import { useRouter } from "vue-router";
+import { onMounted, ref } from "vue";
+import { useRoute, useRouter } from "vue-router";
 import { api } from "@/lib/api";
+import { supabase } from "@/lib/supabase";
+import {
+  clearAdminAccessTokenFallback,
+  getAdminAccessTokenFallback,
+  hasApiAuthToken,
+  parseAdminLoginTokens,
+  setAdminAccessTokenFallback,
+} from "@/lib/adminSession";
+import { sanitizeInternalRedirect } from "@/lib/authRedirect";
 import CustomInput from "@/components/base/input/CustomInput.vue";
 
 const router = useRouter();
+const route = useRoute();
+
+/** หลัง login สำเร็จ — ไปเฉพาะ path ภายใต้ /admin (กันพาไปเว็บอื่น) */
+function postLoginPath(rawRedirect: unknown): string {
+  const path = sanitizeInternalRedirect(rawRedirect);
+  if (path && path.startsWith("/admin") && path !== "/admin/login") return path;
+  return "/admin/course";
+}
 
 const email = ref("");
 const password = ref("");
@@ -22,13 +39,54 @@ const handleLogin = async () => {
 
   loading.value = true;
   try {
-    const { data } = await api.post("/api/auth/admin-login", {
-      email: email.value,
-      password: password.value,
-    });
+    const { data: body } = await api.post(
+      "/api/auth/admin-login",
+      {
+        email: email.value,
+        password: password.value,
+      },
+    );
 
-    localStorage.setItem("admin_user_id", data.userId);
-    router.push("/admin/course");
+    const tokens = parseAdminLoginTokens(body);
+    if (!tokens) {
+      isError.value = true;
+      errorMessage.value = "Login failed. Please try again.";
+      return;
+    }
+    const { accessToken, refreshToken } = tokens;
+
+    await supabase.auth.signOut();
+    clearAdminAccessTokenFallback();
+
+    if (refreshToken) {
+      const { error: sessionError } = await supabase.auth.setSession({
+        access_token: accessToken,
+        refresh_token: refreshToken,
+      });
+      if (sessionError) {
+        setAdminAccessTokenFallback(accessToken);
+      }
+    } else {
+      setAdminAccessTokenFallback(accessToken);
+    }
+
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+
+    if (session?.access_token) {
+      clearAdminAccessTokenFallback();
+    }
+
+    const canProceed =
+      Boolean(session?.access_token) || Boolean(getAdminAccessTokenFallback());
+    if (!canProceed) {
+      isError.value = true;
+      errorMessage.value = "Login failed. Please try again.";
+      return;
+    }
+
+    await router.replace(postLoginPath(route.query.redirect));
   } catch (err: any) {
     isError.value = true;
     const status = err.response?.status;
@@ -51,6 +109,18 @@ const resetError = () => {
   isError.value = false;
   errorMessage.value = "";
 };
+
+onMounted(async () => {
+  if (!(await hasApiAuthToken())) return;
+  try {
+    const { data: me } = await api.get<{ role: string }>("/api/users/me");
+    if (me.role === "ADMIN") {
+      await router.replace(postLoginPath(route.query.redirect));
+    }
+  } catch {
+    /* ยังไม่ login หรือ token หมดอายุ — อยู่หน้า login */
+  }
+});
 </script>
 
 <template>

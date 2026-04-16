@@ -1,5 +1,10 @@
 import axios from "axios";
+import type { InternalAxiosRequestConfig } from "axios";
 import { supabase } from "@/lib/supabase";
+import {
+  clearAdminAccessTokenFallback,
+  getAdminAccessTokenFallback,
+} from "@/lib/adminSession";
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8080";
 
@@ -10,15 +15,39 @@ export const api = axios.create({
   },
 });
 
-api.interceptors.request.use(async (config) => {
-  const { data } = await supabase.auth.getSession()
-  const token = data.session?.access_token
+type ApiRequestConfig = InternalAxiosRequestConfig & { skipAuthRedirect?: boolean };
 
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`
+function setBearer(
+  config: InternalAxiosRequestConfig,
+  token: string | undefined,
+): void {
+  if (!token) return;
+  const h = config.headers;
+  if (h && typeof (h as { set?: (a: string, b: string) => void }).set === "function") {
+    (h as { set: (a: string, b: string) => void }).set("Authorization", `Bearer ${token}`);
+  } else {
+    type HeadersRecord = { Authorization?: string };
+    (config.headers as HeadersRecord).Authorization = `Bearer ${token}`;
   }
+}
 
-  return config
+/** Supabase session → admin localStorage fallback → refreshSession (แอดมิน / race หลัง login) */
+async function resolveAccessToken(): Promise<string | undefined> {
+  const { data: s1 } = await supabase.auth.getSession();
+  let token = s1.session?.access_token;
+  if (token) return token;
+
+  token = getAdminAccessTokenFallback() ?? undefined;
+  if (token) return token;
+
+  const { data: s2 } = await supabase.auth.refreshSession();
+  return s2.session?.access_token ?? undefined;
+}
+
+api.interceptors.request.use(async (config) => {
+  const token = await resolveAccessToken();
+  setBearer(config, token);
+  return config;
 });
 
 /**
@@ -28,20 +57,37 @@ api.interceptors.request.use(async (config) => {
  */
 api.interceptors.response.use(
   (response) => response,
-  (error) => {
-    const status = axios.isAxiosError(error) ? error.response?.status : undefined
+  (error: unknown) => {
+    const status = axios.isAxiosError(error) ? error.response?.status : undefined;
     if (status !== 401) {
-      return Promise.reject(error)
+      return Promise.reject(error);
     }
 
-    const path = window.location.pathname
+    const ax = error as {
+      config?: ApiRequestConfig;
+      response?: { status?: number };
+    };
+    const config = ax.config;
+    const url = String(config?.url ?? "");
+
+    if (url.includes("/api/auth/")) {
+      clearAdminAccessTokenFallback();
+      return Promise.reject(error);
+    }
+
+    if (config?.skipAuthRedirect) {
+      return Promise.reject(error);
+    }
+
+    const path = window.location.pathname;
     if (path === "/login" || path === "/register" || path === "/admin/login") {
-      return Promise.reject(error)
+      return Promise.reject(error);
     }
 
-    const fullPath = path + window.location.search
-    const redirect = encodeURIComponent(fullPath)
-    window.location.assign(`${window.location.origin}/login?redirect=${redirect}`)
-    return Promise.reject(error)
+    const fullPath = path + window.location.search;
+    const redirect = encodeURIComponent(fullPath);
+    const loginPath = path.startsWith("/admin") ? "/admin/login" : "/login";
+    window.location.assign(`${window.location.origin}${loginPath}?redirect=${redirect}`);
+    return Promise.reject(error);
   },
 );
