@@ -108,9 +108,9 @@
                 </ul>
               </div>
             </div>
-        <div v-else class="flex items-center gap-2 md:gap-8">
-          <div class="h-9 w-16 bg-gray-100 rounded animate-pulse"></div>
-        </div>
+        <!-- <div v-else class="flex items-center gap-2 md:gap-8">
+          <div class="h-9 w-16 bg-gray-100 rounded animate-pulse"></div> -->
+        <!-- </div> -->
       </div>
     </div>
   </div>

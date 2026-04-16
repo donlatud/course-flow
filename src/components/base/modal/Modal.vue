@@ -51,7 +51,10 @@ interface Props {
   rightText?: string
   type?: 'primary' | 'secondary'
   class?: HTMLAttributes['class']
-
+  buttonClass?: HTMLAttributes['class']
+  leftButtonClass?: HTMLAttributes['class']
+  rightButtonClass?: HTMLAttributes['class']
+  variant?: 'default' | 'danger'
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -123,18 +126,18 @@ const onRightClick = () => {
 
         <div class="flex flex-col gap-4 lg:flex-row">
           <template v-if="leftIsPrimary">
-            <PrimaryButton class="h-[56px] lg:h-15 w-full! lg:flex-1 lg:min-w-0" @click="onLeftClick">
+            <PrimaryButton :class="cn('h-[56px] lg:h-15', props.leftButtonClass || props.buttonClass, !props.leftButtonClass && !props.buttonClass && 'w-full! lg:flex-1 lg:min-w-0')" @click="onLeftClick">
               {{ leftText }}
             </PrimaryButton>
-            <SecondaryButton class="h-[56px] lg:h-15 w-full! lg:flex-1 lg:min-w-0" @click="onRightClick">
+            <SecondaryButton :class="cn('h-[56px] lg:h-15', props.rightButtonClass || props.buttonClass, !props.rightButtonClass && !props.buttonClass && 'w-full! lg:flex-1 lg:min-w-0')" @click="onRightClick">
               {{ rightText }}
             </SecondaryButton>
           </template>
           <template v-else>
-            <SecondaryButton class="h-[56px] lg:h-15 w-full! lg:flex-1 lg:min-w-0" @click="onLeftClick">
+            <SecondaryButton :class="cn('h-[56px] lg:h-15', props.leftButtonClass || props.buttonClass, !props.leftButtonClass && !props.buttonClass && 'w-full! lg:flex-1 lg:min-w-0')" @click="onLeftClick">
               {{ leftText }}
             </SecondaryButton>
-            <PrimaryButton class="h-[56px] lg:h-15 w-full! lg:flex-1 lg:min-w-0" @click="onRightClick">
+            <PrimaryButton :class="cn('h-[56px] lg:h-15', props.rightButtonClass || props.buttonClass, !props.rightButtonClass && !props.buttonClass && 'w-full! lg:flex-1 lg:min-w-0')" @click="onRightClick">
               {{ rightText }}
             </PrimaryButton>
           </template>

@@ -33,22 +33,22 @@ const instructors = [
 </script>
 
 <template>
-  <section class="relative overflow-hidden md:overflow-visible py-16 md:h-179">
+  <section class="relative overflow-x-hidden py-16 md:h-179">
     <!-- Background Vectors -->
-    <img 
-      :src="vectorCircleDarkBlue" 
-      alt="background circle" 
-      class="absolute top-3 left-87.5 w-8.5 h-8.5 z-0 rotate-90 md:w-18.25 md:h-18.25 md:top-0 md:left-342 2xl:left-479"
+    <img
+      :src="vectorCircleDarkBlue"
+      alt="background circle"
+      class="absolute top-3 left-87.5 w-8.5 h-8.5 z-0 rotate-90 md:w-18.25 md:h-18.25 md:top-0 md:-right-20 md:left-auto 2xl:-right-20"
     />
-    <img 
-      :src="vectorCircleLightBlue" 
-      alt="background circle light" 
-      class="absolute top-13.25 left-83 w-4 h-4 z-0 md:w-7 md:h-7 md:top-20.75 md:left-334 2xl:left-470"
+    <img
+      :src="vectorCircleLightBlue"
+      alt="background circle light"
+      class="absolute top-13.25 left-83 w-4 h-4 z-0 md:w-7 md:h-7 md:top-20.75 md:-right-32 md:left-auto 2xl:-right-32"
     />
-    <img 
-      :src="vectorCrossGreen" 
-      alt="background cross green" 
-      class="absolute top-174 left-6.75 w-5 h-5 z-0 md:top-152.25 md:left-22.75 "
+    <img
+      :src="vectorCrossGreen"
+      alt="background cross green"
+      class="absolute top-174 left-6.75 w-5 h-5 z-0 md:top-152.25 md:left-22.75"
     />
     
     <h1 class="text-headline3 md:text-headline2 font-medium text-center relative z-10">Our Graduates</h1>

@@ -1,5 +1,5 @@
 <template>
-  <div class=" flex md:flex-row md:gap-30 flex-col items-center justify-center" :class="{ 'md:flex-row-reverse': layout === 'reverse' }">
+  <div class=" flex md:flex-row md:px-40 px-4 md:px-0 flex-col items-center justify-center md:justify-between " :class="{ 'md:flex-row-reverse': layout === 'reverse' }">
     <img :src="image" class="rounded-xl  h-82.5" />
 
 

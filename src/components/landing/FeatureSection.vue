@@ -1,5 +1,5 @@
 <template>
-  <section class=" relative overflow-hidden px-4 pb-16 pt-8 flex flex-col gap-8 md:h-277.75 md:justify-center md:gap-30">
+  <section class=" relative overflow-hidden  pb-16 pt-8 flex flex-col gap-8 md:h-277.75 md:justify-center md:gap-30">
     <FeatureBlock
       :image="hero1Image"
       title="Learning experience has been enhanced with new technologies"

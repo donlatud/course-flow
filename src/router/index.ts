@@ -3,6 +3,7 @@ import HomeView from "@/views/HomeView.vue";
 import CoursePage from "@/views/admin/CoursePage.vue";
 import CourseCreatePage from "@/views/admin/CourseCreatePage.vue";
 import LessonCreatePage from "@/views/admin/LessonCreatePage.vue";
+import AssignmentPage from "@/views/admin/AssignmentPage.vue";
 import AdminLoginView from "@/views/admin/AdminLoginView.vue";
 import RegisterView from "@/views/RegisterView.vue";
 import LoginView from "@/views/LoginView.vue";
@@ -11,6 +12,8 @@ import CourseDetail from "@/views/CourseDetail.vue";
 import CourseLearningPage from "@/views/CourseLearningPage.vue";
 import LessonEditPage from "@/views/admin/LessonEditPage.vue";
 import CourseEditPage from "@/views/admin/CourseEditPage.vue";
+import AssignmentEditPage from "@/views/admin/AssignmentEditPage.vue";
+import AssignmentCreatePage from "@/views/admin/AssignmentCreatePage.vue";
 import CheckoutView from "@/views/payment/CheckoutView.vue";
 import CompletedView from "@/views/payment/CompletedView.vue";
 import FailedView from "@/views/payment/FailedView.vue";
@@ -22,6 +25,7 @@ import { api } from "@/lib/api";
 import { hasApiAuthToken } from "@/lib/adminSession";
 
 const ADMIN_LOGIN_PATH = "/admin/login";
+
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -104,6 +108,21 @@ const router = createRouter({
       path: "/admin/course/create/lesson/:lessonId/edit",
       name: "admin-course-create-lesson-edit",
       component: LessonEditPage,
+    },
+    {
+      path: "/admin/assignment",
+      name: "admin-assignment",
+      component: AssignmentPage,
+    },
+    {
+      path: "/admin/assignment/:assignmentId/edit",
+      name: "admin-assignment-edit",
+      component: AssignmentEditPage,
+    },
+    {
+      path: "/admin/assignment/create",
+      name: "admin-assignment-create",
+      component: AssignmentCreatePage,
     },
   ],
   scrollBehavior(_to, _from, savedPosition) {
