@@ -23,6 +23,7 @@ import MyCoursesView from "@/views/MyCoursesView.vue";
 import ProfileView from "@/views/ProfileView.vue";
 import MyAssignmentsView from "@/views/MyAssignmentsView.vue";
 import CourseAssignmentsView from "@/views/CourseAssignmentsView.vue";
+import axios from "axios";
 import MyWishlistView from "@/views/MyWishlistView.vue";
 import { api } from "@/lib/api";
 import { hasApiAuthToken } from "@/lib/adminSession";
@@ -156,12 +157,20 @@ router.beforeEach(async (to) => {
   }
 
   try {
-    const { data: me } = await api.get<{ role: string }>("/api/users/me");
+    /** ไม่ให้ interceptor ทำ window.location บน 401 — ให้ guard ตัดสิน (กันสับสนกับ 5xx / network) */
+    const { data: me } = await api.get<{ role: string }>("/api/users/me", {
+      skipAuthRedirect: true,
+    });
     if (me.role !== "ADMIN") {
       return { path: "/", replace: true };
     }
-  } catch {
-    return { path: ADMIN_LOGIN_PATH, query: { redirect: to.fullPath } };
+  } catch (e) {
+    const status = axios.isAxiosError(e) ? e.response?.status : undefined;
+    /** เฉพาะ “ไม่ได้รับรองตัวตน” ถึงไป login; 404/5xx/timeout ไม่ใช่ token หมดอายุ */
+    if (status === 401) {
+      return { path: ADMIN_LOGIN_PATH, query: { redirect: to.fullPath } };
+    }
+    return true;
   }
 
   return true;

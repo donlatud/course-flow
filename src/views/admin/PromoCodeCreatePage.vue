@@ -8,6 +8,7 @@ import CourseMultiSelect from "@/components/base/input/CourseMultiSelect.vue";
 import Modal from "@/components/base/modal/Modal.vue";
 import PrimaryButton from "@/components/base/button/PrimaryButton.vue";
 import SecondaryButton from "@/components/base/button/SecondaryButton.vue";
+import { extractCourseRowsFromAdminListPayload } from "@/lib/adminCoursesApi";
 import { api } from "@/lib/api";
 
 type DiscountType = "FIXED_AMOUNT" | "PERCENT";
@@ -201,8 +202,16 @@ function confirmDiscountTypeSwitch() {
 
 async function fetchCourses() {
   try {
-    const { data } = await api.get<CourseApiItem[]>("/api/admin/courses");
-    allCourses.value = (data ?? []).map((course: CourseApiItem) => ({
+    const { data } = await api.get("/api/admin/courses", {
+      params: {
+        page: 0,
+        size: 500,
+        sortBy: "createdAt",
+        sortDir: "desc",
+      },
+    });
+    const rows = extractCourseRowsFromAdminListPayload(data);
+    allCourses.value = rows.map((course: CourseApiItem) => ({
       id: String(course.id),
       title: course.title,
       price: course.price,

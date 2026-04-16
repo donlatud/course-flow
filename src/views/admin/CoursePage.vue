@@ -109,6 +109,33 @@ function mapApiToCourseItem(apiItem: any): CourseItem {
   };
 }
 
+/**
+ * Spring Data `Page` → `{ content, totalElements }`.
+ * Some proxies or older handlers return a bare array — paginate on the client.
+ */
+function normalizeAdminCoursesPayload(
+  raw: unknown,
+  page: number,
+  size: number,
+): { items: unknown[]; total: number } {
+  if (Array.isArray(raw)) {
+    const total = raw.length;
+    const start = (page - 1) * size;
+    const items = raw.slice(start, start + size);
+    return { items, total };
+  }
+  if (raw && typeof raw === "object" && "content" in raw) {
+    const o = raw as { content?: unknown[]; totalElements?: unknown };
+    const content = Array.isArray(o.content) ? o.content : [];
+    const total =
+      typeof o.totalElements === "number" && Number.isFinite(o.totalElements)
+        ? o.totalElements
+        : content.length;
+    return { items: content, total };
+  }
+  return { items: [], total: 0 };
+}
+
 async function fetchCourses() {
   try {
     isLoading.value = true;
@@ -124,14 +151,13 @@ async function fetchCourses() {
           : {}),
       },
     });
-    const data = response.data as {
-      content?: unknown[];
-      totalElements?: number;
-    };
-    courses.value = (data.content ?? []).map((item) =>
-      mapApiToCourseItem(item),
+    const { items, total } = normalizeAdminCoursesPayload(
+      response.data,
+      currentPage.value,
+      PAGE_SIZE,
     );
-    totalElements.value = data.totalElements ?? 0;
+    courses.value = items.map((item) => mapApiToCourseItem(item));
+    totalElements.value = total;
   } catch (error: any) {
     console.error(error);
     errorMessage.value =
