@@ -6,6 +6,7 @@ import type {
   MaterialLearningDto,
   MaterialProgressStatus,
 } from "@/types/course-learning/course-learning-api"
+import { buildMockAssignments } from "@/mocks/courseLearningDemo"
 import {
   createMaterialProgress,
   getAssignments,
@@ -18,10 +19,6 @@ import {
   mapCourseLearningDtoToModules,
   progressModelValueFromDto,
 } from "@/utils/course-learning/mapCourseLearningToSidebar"
-import {
-  buildMockAssignments,
-  buildMockCourseLearningDto,
-} from "@/mocks/courseLearningDemo"
 import { toast } from "vue-sonner"
 import { useOfflineQueue } from "@/composables/useOfflineQueue"
 
@@ -30,6 +27,11 @@ export type CourseLearningStore = ReturnType<typeof createCourseLearningStore>
 const COURSE_LEARNING_KEY: InjectionKey<CourseLearningStore> = Symbol("course-learning")
 
 export function createCourseLearningStore() {
+  const mockAssignmentsEnabled =
+    String((import.meta.env as { VITE_MOCK_ASSIGNMENTS?: unknown }).VITE_MOCK_ASSIGNMENTS ?? "")
+      .trim()
+      .toLowerCase() === "true"
+
   const modules = ref<CourseModule[]>([])
   const activeLessonId = ref("")
   const materialsById = ref<Record<string, MaterialLearningDto>>({})
@@ -59,9 +61,6 @@ export function createCourseLearningStore() {
 
   const { addToQueue, isOnline } = useOfflineQueue()
 
-  /** When true, skip learning/assignment API calls (demo / sprint review). */
-  const mockCourseLearningEnabled = ref(false)
-
   const flatLessons = computed<Lesson[]>(() => modules.value.flatMap((m) => m.lessons))
 
   const activeLessonIndex = computed(() =>
@@ -85,6 +84,12 @@ export function createCourseLearningStore() {
   const hasNext = computed(() => {
     const idx = activeLessonIndex.value
     return idx >= 0 && idx < flatLessons.value.length - 1
+  })
+
+  const isLastLesson = computed(() => {
+    const idx = activeLessonIndex.value
+    const n = flatLessons.value.length
+    return n > 0 && idx >= 0 && idx === n - 1
   })
 
   const completedModuleIds = ref<Set<string>>(new Set())
@@ -140,14 +145,34 @@ export function createCourseLearningStore() {
     }
   }
 
-  function recomputeProgressFromMaterials() {
+  /** Aligns with server: materials + assignments each count as one unit toward course %. */
+  function recomputeProgress() {
     const materials = Object.values(materialsById.value)
-    if (materials.length === 0) {
+    const matTotal = materials.length
+    const matDone = materials.filter((m) => m.completed).length
+    const assignList = assignments.value
+    const assignTotal = assignList.length
+    const assignDone = assignList.filter((a) => a.submitted).length
+    const total = matTotal + assignTotal
+    if (total === 0) {
       progressValue.value = 0
       return
     }
-    const completed = materials.filter((m) => m.completed).length
-    progressValue.value = Math.round((completed / materials.length) * 100)
+    progressValue.value = Math.round(((matDone + assignDone) / total) * 100)
+  }
+
+  /**
+   * Keep sidebar + course % in sync after VIDEO saves from useVideoProgress (API already persisted).
+   */
+  function syncMaterialProgressFromPlayer(
+    materialId: string,
+    patch: Partial<{
+      completed: boolean
+      status: MaterialProgressStatus
+      lastPosition: number | null
+    }>,
+  ) {
+    patchMaterialInStore(materialId, patch)
   }
 
   function patchMaterialInStore(
@@ -178,7 +203,7 @@ export function createCourseLearningStore() {
       ),
     }))
 
-    recomputeProgressFromMaterials()
+    recomputeProgress()
   }
 
   /**
@@ -189,17 +214,6 @@ export function createCourseLearningStore() {
     const mat = activeMaterial.value
     const enr = enrollmentId.value
     if (!mat || !enr) return true
-
-    if (mockCourseLearningEnabled.value) {
-      if (mat.completed) return true
-      if (mat.fileType !== "PDF" && mat.fileType !== "IMAGE") return true
-      patchMaterialInStore(mat.materialId, {
-        completed: true,
-        status: "COMPLETED",
-        lastPosition: mat.lastPosition ?? 0,
-      })
-      return true
-    }
 
     if (mat.completed) return true
     if (mat.fileType !== "PDF" && mat.fileType !== "IMAGE") return true
@@ -284,6 +298,86 @@ export function createCourseLearningStore() {
     }
   }
 
+  /**
+   * Last lesson in the course: mark current material complete (PDF/IMAGE/VIDEO) without navigating.
+   */
+  async function completeCurrentLesson(): Promise<void> {
+    if (!isLastLesson.value || navigationPending.value) return
+
+    const mat = activeMaterial.value
+    if (!mat || mat.completed) return
+
+    navigationPending.value = true
+    try {
+      const okNonVideo = await completeActiveNonVideoIfNeeded()
+      if (!okNonVideo) return
+
+      const current = activeMaterial.value
+      if (!current || current.completed || current.fileType !== "VIDEO") return
+
+      const enr = enrollmentId.value
+      if (!enr) return
+
+      const lastPos =
+        current.duration != null && Number.isFinite(current.duration) && current.duration > 0
+          ? Math.floor(current.duration)
+          : Math.max(0, Math.floor(current.lastPosition ?? 0))
+
+      try {
+        const created = await createMaterialProgress({
+          enrollmentId: enr,
+          materialId: current.materialId,
+        })
+        const updated = await updateMaterialProgress(created.id, {
+          status: "COMPLETED",
+          lastPosition: lastPos,
+          completedAt: new Date().toISOString(),
+        })
+        patchMaterialInStore(current.materialId, {
+          completed: true,
+          status: "COMPLETED",
+          lastPosition: updated.lastPosition ?? lastPos,
+        })
+      } catch (e) {
+        const errorMessage =
+          e instanceof Error ? e.message : "Could not mark this lesson as complete"
+        const isNetworkError =
+          errorMessage.toLowerCase().includes("network") ||
+          errorMessage.toLowerCase().includes("fetch") ||
+          errorMessage.toLowerCase().includes("offline") ||
+          !isOnline.value
+
+        if (isNetworkError) {
+          const materialId = current.materialId
+          addToQueue(
+            async () => {
+              const created = await createMaterialProgress({
+                enrollmentId: enr,
+                materialId,
+              })
+              const updated = await updateMaterialProgress(created.id, {
+                status: "COMPLETED",
+                lastPosition: lastPos,
+                completedAt: new Date().toISOString(),
+              })
+              patchMaterialInStore(materialId, {
+                completed: true,
+                status: "COMPLETED",
+                lastPosition: updated.lastPosition ?? lastPos,
+              })
+            },
+            `Complete VIDEO material`,
+          )
+          error.value = "Lesson completion will be saved when you're back online"
+        } else {
+          error.value = errorMessage
+        }
+      }
+    } finally {
+      navigationPending.value = false
+    }
+  }
+
   function pickInitialLessonId(nextModules: CourseModule[], previousId: string): string {
     const lastWatched = loadLastWatchedLesson()
     if (lastWatched && nextModules.some((m) => m.lessons.some((l) => l.id === lastWatched))) {
@@ -297,7 +391,6 @@ export function createCourseLearningStore() {
 
   async function fetchCourseLearning(courseId: string) {
     if (!courseId.trim()) {
-      mockCourseLearningEnabled.value = false
       error.value = "Course ID is missing"
       modules.value = []
       materialsById.value = {}
@@ -311,12 +404,9 @@ export function createCourseLearningStore() {
     error.value = null
     try {
       currentCourseId.value = courseId
-      const useMock = import.meta.env.VITE_MOCK_COURSE_LEARNING === "true"
-      mockCourseLearningEnabled.value = useMock
-
-      const data = useMock
-        ? buildMockCourseLearningDto(courseId)
-        : await getCourseLearning(courseId)
+      assignments.value = []
+      activeAssignmentId.value = ""
+      const data = await getCourseLearning(courseId)
       if (!data || !Array.isArray((data as { modules?: unknown }).modules)) {
         throw new Error("Invalid course learning response: missing `modules`")
       }
@@ -331,10 +421,9 @@ export function createCourseLearningStore() {
 
       activeLessonId.value = pickInitialLessonId(nextModules, activeLessonId.value)
 
-      // Load assignments for this course (best-effort, non-blocking for main UI).
-      void fetchAssignments(courseId)
+      await fetchAssignments(courseId)
+      recomputeProgress()
     } catch (e) {
-      mockCourseLearningEnabled.value = false
       const message =
         e instanceof Error ? e.message : "Could not load course data"
       error.value = message
@@ -355,7 +444,7 @@ export function createCourseLearningStore() {
     assignmentsLoading.value = true
     assignmentsError.value = null
     try {
-      if (mockCourseLearningEnabled.value) {
+      if (mockAssignmentsEnabled) {
         const list = buildMockAssignments()
         assignments.value = list
         activeAssignmentId.value = list[0]?.assignmentId ?? ""
@@ -387,31 +476,41 @@ export function createCourseLearningStore() {
 
   async function submitActiveAssignment() {
     const a = activeAssignment.value
-    if (!a) return
+    if (!a) {
+      assignmentSubmitError.value =
+        "Assignment is not available. Refresh the page or check that this course has an assignment."
+      return
+    }
     if (assignmentSubmitting.value) return
     if (assignmentText.value.trim().length === 0) return
 
-    assignmentSubmitting.value = true
-    assignmentSubmitError.value = null
-    try {
-      if (mockCourseLearningEnabled.value) {
-        const text = assignmentText.value
+    if (mockAssignmentsEnabled) {
+      assignmentSubmitting.value = true
+      assignmentSubmitError.value = null
+      try {
         assignmentSubmitted.value = true
-        submittedAnswerText.value = text
+        submittedAnswerText.value = assignmentText.value
         assignments.value = assignments.value.map((x) =>
           x.assignmentId === a.assignmentId
             ? {
                 ...x,
                 submitted: true,
-                submissionId: "mock-submission-id",
+                submissionId: x.submissionId ?? "mock-submission",
                 submissionStatus: "SUBMITTED",
                 submittedAt: new Date().toISOString(),
               }
             : x,
         )
-        toast.success("ส่งงานแล้ว (mock)")
-        return
+        recomputeProgress()
+      } finally {
+        assignmentSubmitting.value = false
       }
+      return
+    }
+
+    assignmentSubmitting.value = true
+    assignmentSubmitError.value = null
+    try {
       const res = await submitAssignment(a.assignmentId, {
         submissionText: assignmentText.value,
       })
@@ -427,9 +526,11 @@ export function createCourseLearningStore() {
               submissionId: res.submissionId,
               submissionStatus: res.status,
               submittedAt: res.submittedAt,
+              solution: res.solution ?? x.solution ?? null,
             }
           : x,
       )
+      recomputeProgress()
     } catch (e) {
       const errorMessage = e instanceof Error ? e.message : "Could not submit assignment"
       const isNetworkError = 
@@ -458,9 +559,11 @@ export function createCourseLearningStore() {
                     submissionId: res.submissionId,
                     submissionStatus: res.status,
                     submittedAt: res.submittedAt,
+                    solution: res.solution ?? x.solution ?? null,
                   }
                 : x,
             )
+            recomputeProgress()
           },
           `Assignment submission`
         )
@@ -491,10 +594,13 @@ export function createCourseLearningStore() {
     navigationPending,
     hasPrev,
     hasNext,
+    isLastLesson,
     setActiveLessonId,
     goPrev,
     goNext,
+    completeCurrentLesson,
     fetchCourseLearning,
+    syncMaterialProgressFromPlayer,
 
     // assignments
     assignments,

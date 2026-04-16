@@ -10,10 +10,6 @@ import type {
 } from "@/types/course-learning/course-learning-api"
 import { useOfflineQueue } from "./useOfflineQueue"
 
-function isMockCourseLearning(): boolean {
-  return import.meta.env.VITE_MOCK_COURSE_LEARNING === "true"
-}
-
 type SaveReason = "interval" | "pause" | "ended" | "seeked"
 
 export type UseVideoProgressOptions = {
@@ -39,6 +35,13 @@ export type UseVideoProgressOptions = {
    * Skip update if position changed by less than this many seconds (except on ended).
    */
   minPositionDeltaSeconds?: number
+  /**
+   * Called after a successful API save so course sidebar / % progress update (store is not refetched).
+   */
+  onProgressSaved?: (payload: {
+    status: MaterialProgressStatus
+    lastPosition: number
+  }) => void
 }
 
 export function useVideoProgress(options: UseVideoProgressOptions) {
@@ -105,14 +108,6 @@ export function useVideoProgress(options: UseVideoProgressOptions) {
 
     ensureInFlight = (async () => {
       try {
-        if (isMockCourseLearning()) {
-          progressId.value = `mock-${materialId.value}`
-          status.value = initialStatus
-          const fromInitial = initialResumeSeconds.value ?? 0
-          lastSavedPosition.value = fromInitial
-          return progressId.value
-        }
-
         const res = (await createMaterialProgress({
           enrollmentId: enrollmentId.value!,
           materialId: materialId.value!,
@@ -153,12 +148,6 @@ export function useVideoProgress(options: UseVideoProgressOptions) {
       const nextStatus: MaterialProgressStatus =
         reason === "ended" ? "COMPLETED" : "IN_PROGRESS"
 
-      if (isMockCourseLearning()) {
-        status.value = nextStatus
-        lastSavedPosition.value = pos
-        return
-      }
-
       const payload = {
         status: nextStatus,
         lastPosition: pos,
@@ -168,6 +157,9 @@ export function useVideoProgress(options: UseVideoProgressOptions) {
       const res = (await updateMaterialProgress(id, payload)) as MaterialProgressResponse
       status.value = res.status ?? nextStatus
       lastSavedPosition.value = res.lastPosition ?? pos
+      const syncedStatus = res.status ?? nextStatus
+      const syncedPos = Math.max(0, Math.floor(Number(res.lastPosition ?? pos)))
+      options.onProgressSaved?.({ status: syncedStatus, lastPosition: syncedPos })
     } catch (e) {
       const errorMessage = e instanceof Error ? e.message : "Failed to save video progress"
       const isNetworkError = 
@@ -194,6 +186,9 @@ export function useVideoProgress(options: UseVideoProgressOptions) {
               status.value = res.status ?? nextStatus
               lastSavedPosition.value = res.lastPosition ?? pos
               error.value = null
+              const syncedStatus = res.status ?? nextStatus
+              const syncedPos = Math.max(0, Math.floor(Number(res.lastPosition ?? pos)))
+              options.onProgressSaved?.({ status: syncedStatus, lastPosition: syncedPos })
             },
             `Video progress at ${pos}s (${reason})`
           )

@@ -11,6 +11,7 @@ const props = defineProps<{
   submitted: boolean
   title?: string
   prompt?: string | null
+  solution?: string | null
   loading?: boolean
   submitting?: boolean
   error?: string | null
@@ -30,7 +31,7 @@ function onSubmit() {
 </script>
 
 <template>
-  <section class="flex flex-col gap-4 rounded-[8px] bg-blue-100 p-4 md:gap-5 md:p-5 lg:mt-[47px] lg:h-[314px] lg:gap-[25px] lg:p-6">
+  <section class="flex flex-col gap-4 rounded-[8px] bg-blue-100 p-4 md:gap-5 md:p-5 lg:mt-[47px] lg:gap-[25px] lg:p-6">
     <header class="flex items-center justify-between">
       <div class="text-body1 text-black">
         {{ title || "Assignment" }}
@@ -58,6 +59,25 @@ function onSubmit() {
       >{{ submittedAnswer }}</pre>
     </div>
 
+    <details
+      v-if="solution && solution.trim().length > 0"
+      :open="submitted"
+      class="rounded-[8px] bg-white px-4 py-3"
+    >
+      <summary class="cursor-pointer select-none text-body2 text-gray-900">
+        Solution
+        <span v-if="!submitted" class="text-body4 text-gray-600">
+          (submit to view)
+        </span>
+      </summary>
+      <div class="mt-3">
+        <pre
+          class="whitespace-pre-wrap text-body3 text-gray-700"
+          aria-label="Solution"
+        >{{ submitted ? solution : "" }}</pre>
+      </div>
+    </details>
+
     <p
       v-if="error"
       class="text-body4 text-gray-900"
@@ -71,6 +91,7 @@ function onSubmit() {
       class="flex flex-col gap-2 lg:flex-row lg:gap-0 lg:justify-between lg:items-center lg:h-15"
     >
       <PrimaryButton
+        type="button"
         class="h-15 w-full lg:w-[203px]"
         :disabled="Boolean(loading) || Boolean(submitting) || modelValue.trim().length === 0"
         @click="onSubmit"

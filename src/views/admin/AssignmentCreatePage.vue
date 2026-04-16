@@ -6,6 +6,7 @@ import { ArrowLeft } from "lucide-vue-next";
 import { appToast } from "@/components/base/toast";
 import CustomSelect from "@/components/base/input/CustomSelect.vue";
 import CustomInput from "@/components/base/input/CustomInput.vue";
+import { Textarea } from "@/components/ui/textarea";
 
 const router = useRouter();
 
@@ -39,6 +40,7 @@ const selectedLessonId = ref("");
 const selectedSubLessonId = ref("");
 const assignmentTitle = ref("");
 const assignmentDescription = ref("");
+const assignmentSolution = ref("");
 
 onMounted(async () => {
   await fetchCourses();
@@ -136,6 +138,7 @@ async function createAssignment() {
     const payload = {
       title: assignmentTitle.value,
       description: assignmentDescription.value,
+      solution: assignmentSolution.value,
       courseId: selectedCourseId.value,
       moduleId: selectedLessonId.value,
       materialId: selectedSubLessonId.value,
@@ -236,6 +239,14 @@ function goBack() {
             :error-message="titleError || undefined"
             class="mb-6"
           />
+
+          <div class="mb-6">
+            <label class="block text-sm font-medium text-gray-700 mb-2">Solution (optional)</label>
+            <Textarea
+              v-model="assignmentSolution"
+              class="min-h-[140px] resize-y"
+            />
+          </div>
         </div>
       </div>
     </main>

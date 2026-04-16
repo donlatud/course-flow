@@ -5,7 +5,6 @@ export const MOCK_COURSE_LEARNING_ENROLLMENT_ID = "aaaaaaaa-bbbb-4ccc-dddd-eeeee
 
 /**
  * Full UI demo for course learning (progress, modules, materials, prev/next).
- * Enable with `VITE_MOCK_COURSE_LEARNING=true` in `.env` / `.env.local`.
  */
 export function buildMockCourseLearningDto(courseId: string): CourseLearningDto {
   return {
@@ -94,6 +93,8 @@ export function buildMockAssignments(): AssignmentDto[] {
       assignmentId: "dddddddd-1111-4111-8111-111111111111",
       title: "Mock assignment: reflect on module 1",
       description: "เขียนสั้นๆ 1–2 ประโยค (โหมด mock — ส่งแล้วจะแสดงในหน้าจอเท่านั้น)",
+      solution:
+        "ตัวอย่างคำตอบ (เฉลย):\n- People\n- Processes\n- Products\n- Partners\n\nอธิบายสั้นๆ ว่าแต่ละองค์ประกอบช่วยให้บริการมีคุณภาพและส่งมอบประสบการณ์ที่สม่ำเสมอได้อย่างไร",
       startDate: null,
       endDate: null,
       submitted: false,

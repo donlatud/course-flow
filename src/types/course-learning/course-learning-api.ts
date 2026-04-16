@@ -68,6 +68,8 @@ export type AssignmentDto = {
   assignmentId: string
   title: string
   description: string | null
+  /** Optional solution/explanation shown under the assignment after submission */
+  solution?: string | null
   startDate: string | null
   endDate: string | null
   submitted: boolean
@@ -91,5 +93,7 @@ export type SubmitAssignmentResponse = {
   submissionText: string | null
   fileUrl: string | null
   submittedAt: string | null
+  /** Optional solution/explanation shown under the assignment after submission */
+  solution?: string | null
 }
 

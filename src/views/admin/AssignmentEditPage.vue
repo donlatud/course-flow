@@ -7,6 +7,7 @@ import Modal from "@/components/base/modal/Modal.vue";
 import { appToast } from "@/components/base/toast";
 import CustomSelect from "@/components/base/input/CustomSelect.vue";
 import CustomInput from "@/components/base/input/CustomInput.vue";
+import { Textarea } from "@/components/ui/textarea";
 
 const route = useRoute();
 const router = useRouter();
@@ -50,6 +51,7 @@ const selectedLessonId = ref("");
 const selectedSubLessonId = ref("");
 const assignmentTitle = ref("");
 const assignmentDescription = ref("");
+const assignmentSolution = ref("");
 
 onMounted(async () => {
   await fetchAssignment();
@@ -109,6 +111,7 @@ async function fetchAssignment() {
     // Populate form from API data
     assignmentTitle.value = response.data.title;
     assignmentDescription.value = response.data.description || "";
+    assignmentSolution.value = response.data.solution || "";
     selectedCourseId.value = response.data.courseId || "";
 
     // Add course from API to courses list if not already present
@@ -211,6 +214,7 @@ async function saveAssignment() {
     const payload = {
       title: assignmentTitle.value,
       description: assignmentDescription.value,
+      solution: assignmentSolution.value,
       courseId: selectedCourseId.value,
       moduleId: selectedLessonId.value,
       materialId: selectedSubLessonId.value,
@@ -320,6 +324,14 @@ function goBack() {
             :error-message="titleError || undefined"
             class="mb-6"
           />
+
+          <div class="mb-6">
+            <label class="block text-sm font-medium text-gray-700 mb-2">Solution (optional)</label>
+            <Textarea
+              v-model="assignmentSolution"
+              class="min-h-[140px] resize-y"
+            />
+          </div>
 
           
         </div>
