@@ -526,6 +526,7 @@ export function createCourseLearningStore() {
               submissionId: res.submissionId,
               submissionStatus: res.status,
               submittedAt: res.submittedAt,
+              solution: res.solution ?? x.solution ?? null,
             }
           : x,
       )
@@ -558,6 +559,7 @@ export function createCourseLearningStore() {
                     submissionId: res.submissionId,
                     submissionStatus: res.status,
                     submittedAt: res.submittedAt,
+                    solution: res.solution ?? x.solution ?? null,
                   }
                 : x,
             )

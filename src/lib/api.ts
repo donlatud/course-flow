@@ -16,6 +16,7 @@ export const api = axios.create({
 });
 
 type ApiRequestConfig = InternalAxiosRequestConfig & { skipAuthRedirect?: boolean };
+type RequestWithAuthRetry = ApiRequestConfig & { _authRetry?: boolean };
 
 function setBearer(
   config: InternalAxiosRequestConfig,
@@ -61,30 +62,21 @@ api.interceptors.request.use(async (config) => {
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
-    const status = axios.isAxiosError(error) ? error.response?.status : undefined
+    const status = axios.isAxiosError(error) ? error.response?.status : undefined;
     if (status !== 401) {
       return Promise.reject(error);
     }
 
-    const originalRequest = error.config as RequestWithAuthRetry | undefined
+    const originalRequest = error.config as RequestWithAuthRetry | undefined;
     if (originalRequest && !originalRequest._authRetry) {
-      originalRequest._authRetry = true
-      const { data: refreshed, error: refreshErr } = await supabase.auth.refreshSession()
-      const newToken = refreshed.session?.access_token
+      originalRequest._authRetry = true;
+      const { data: refreshed, error: refreshErr } =
+        await supabase.auth.refreshSession();
+      const newToken = refreshed.session?.access_token;
       if (!refreshErr && newToken) {
-        originalRequest.headers.Authorization = `Bearer ${newToken}`
-        return api.request(originalRequest)
-      }
-    }
-
-    const originalRequest = error.config as RequestWithAuthRetry | undefined
-    if (originalRequest && !originalRequest._authRetry) {
-      originalRequest._authRetry = true
-      const { data: refreshed, error: refreshErr } = await supabase.auth.refreshSession()
-      const newToken = refreshed.session?.access_token
-      if (!refreshErr && newToken) {
-        originalRequest.headers.Authorization = `Bearer ${newToken}`
-        return api.request(originalRequest)
+        (originalRequest.headers as { Authorization?: string }).Authorization =
+          `Bearer ${newToken}`;
+        return api.request(originalRequest);
       }
     }
 
