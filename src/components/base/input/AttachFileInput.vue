@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { HTMLAttributes } from "vue";
-import { cn, fileNameFromAttachmentUrl } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import { FileText, Plus, X } from "lucide-vue-next";
 import { ref } from "vue";
 
