@@ -181,13 +181,21 @@ export function useOmise() {
           isReady.value = true
           resolve()
         } else {
-          reject(new Error("Omise script loaded but Omise object not found"))
+          reject(
+            new Error(
+              "Payment form could not initialize. Please refresh the page and try again.",
+            ),
+          )
         }
       }
 
       // เมื่อ script load ไม่สำเร็จ
       script.onerror = () => {
-        reject(new Error("Failed to load Omise script"))
+        reject(
+          new Error(
+            "Could not load the card payment script. Check your connection, disable ad blockers, or try again.",
+          ),
+        )
       }
 
       // Append script to head
@@ -222,7 +230,8 @@ export function useOmise() {
     }
 
     if (!OMISE_PUBLIC_KEY.trim()) {
-      const msg = "VITE_OMISE_PUBLIC_KEY is not set"
+      const msg =
+        "Card payments are not configured on this environment (missing Omise public key)."
       error.value = msg
       return Promise.reject(new Error(msg))
     }

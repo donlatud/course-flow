@@ -67,7 +67,7 @@ export interface ValidatePromoCodeResponse {
   discountAmount?: number  // จำนวนเงินที่ลด (คำนวณแล้ว)
   finalPrice?: number      // ราคาสุทธิหลังหักส่วนลด
   /** ตรงกับ backend PromoCodeValidationResponse.Reason */
-  reason?: "EXPIRED" | "NOT_FOUND" | "USAGE_LIMIT_REACHED" | "ALREADY_USED" | "INVALID"
+  reason?: "EXPIRED" | "NOT_FOUND" | "USAGE_LIMIT_REACHED" | "ALREADY_USED" | "INVALID" | "COURSE_PRICE_TOO_LOW" | "FINAL_PRICE_TOO_LOW"
 }
 
 /**
