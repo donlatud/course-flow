@@ -95,6 +95,11 @@ const router = createRouter({
       component: PromoCodeCreatePage,
     },
     {
+      path: "/admin/promo-code/:promoId/edit",
+      name: "admin-promo-code-edit",
+      component: PromoCodeCreatePage,
+    },
+    {
       path: "/admin/course",
       name: "admin-course",
       component: CoursePage,

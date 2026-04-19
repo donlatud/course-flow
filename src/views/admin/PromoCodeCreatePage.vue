@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from "vue";
-import { useRouter } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 import axios from "axios";
 import CustomInput from "@/components/base/input/CustomInput.vue";
 import NumberInput from "@/components/base/input/NumberInput.vue";
@@ -24,6 +24,21 @@ type CourseApiItem = {
   title: string;
   price: number | string | null;
 };
+
+type AdminPromoCodeDetail = {
+  id: string;
+  code: string;
+  minimumPurchaseAmount: number | string | null;
+  discountType: "PERCENTAGE" | "FIXED_AMOUNT";
+  discountValue: number | string;
+  courseIds: string[];
+};
+
+function discountValueToInputString(value: AdminPromoCodeDetail["discountValue"]): string {
+  if (value == null) return "";
+  if (typeof value === "number" && Number.isFinite(value)) return String(value);
+  return String(value).replace(/,/g, "").trim();
+}
 
 /** Accepts API price as number or string (including comma-separated). */
 function coursePriceNumber(price: CourseApiItem["price"]): number {
@@ -56,11 +71,11 @@ function validatePercentField(): boolean {
     return false;
   }
   if (p < 0) {
-    percentFieldError.value = "Percent must not be less than 0.";
+    percentFieldError.value = "Percent (%) must not be negative.";
     return false;
   }
   if (p > 100) {
-    percentFieldError.value = "Percent must not exceed 100.";
+    percentFieldError.value = "Percent (%) must not exceed 100.";
     return false;
   }
   return true;
@@ -79,13 +94,20 @@ function validateFixedAmountField(): boolean {
     return false;
   }
   if (f < 0) {
-    fixedAmountFieldError.value = "Amount must not be less than 0.";
+    fixedAmountFieldError.value = "Fixed amount (THB) must not be negative.";
     return false;
   }
   return true;
 }
 
+const route = useRoute();
 const router = useRouter();
+
+const promoId = computed(() => {
+  const raw = route.params.promoId;
+  return typeof raw === "string" && raw.trim() !== "" ? raw.trim() : "";
+});
+const isEditMode = computed(() => Boolean(promoId.value));
 
 const promoCode = ref("");
 const minimumPurchase = ref("");
@@ -222,6 +244,40 @@ async function fetchCourses() {
   }
 }
 
+async function loadPromoForEdit(id: string) {
+  try {
+    const { data } = await api.get<AdminPromoCodeDetail>(`/api/admin/courses/promo-codes/${id}`);
+    promoCode.value = data.code ?? "";
+    minimumPurchase.value =
+      data.minimumPurchaseAmount != null && String(data.minimumPurchaseAmount).trim() !== ""
+        ? String(data.minimumPurchaseAmount).replace(/,/g, "").trim()
+        : "";
+    if (data.discountType === "PERCENTAGE") {
+      discountType.value = "PERCENT";
+      percentValue.value = discountValueToInputString(data.discountValue);
+      fixedAmountValue.value = "";
+    } else {
+      discountType.value = "FIXED_AMOUNT";
+      fixedAmountValue.value = discountValueToInputString(data.discountValue);
+      percentValue.value = "";
+    }
+    coursesIncluded.value = Array.isArray(data.courseIds)
+      ? data.courseIds.map((cid) => String(cid))
+      : [];
+  } catch (error) {
+    console.error("Failed to load promo code for edit:", error);
+    let detail = "Could not load this promo code.";
+    if (axios.isAxiosError(error) && error.response?.data && typeof error.response.data === "object") {
+      const m = (error.response.data as { message?: unknown }).message;
+      if (typeof m === "string" && m.trim() !== "") {
+        detail = m;
+      }
+    }
+    window.alert(detail);
+    router.push({ name: "admin-promo-code" });
+  }
+}
+
 function goBackToPromoList() {
   router.push({ name: "admin-promo-code" });
 }
@@ -302,11 +358,17 @@ async function confirmCreatePromo() {
 
   try {
     isSubmitting.value = true;
-    await api.post("/api/admin/promo-codes", payload);
+    if (isEditMode.value) {
+      await api.put(`/api/admin/courses/promo-codes/${promoId.value}`, payload);
+    } else {
+      await api.post("/api/admin/courses/promo-codes", payload);
+    }
     router.push({ name: "admin-promo-code" });
   } catch (error) {
-    console.error("Failed to create promo code:", error);
-    let detail = "Could not create the promo code. Please try again.";
+    console.error("Failed to save promo code:", error);
+    let detail = isEditMode.value
+      ? "Could not update the promo code. Please try again."
+      : "Could not create the promo code. Please try again.";
     if (axios.isAxiosError(error) && error.response?.data && typeof error.response.data === "object") {
       const m = (error.response.data as { message?: unknown }).message;
       if (typeof m === "string" && m.trim() !== "") {
@@ -319,17 +381,22 @@ async function confirmCreatePromo() {
   }
 }
 
-onMounted(fetchCourses);
+onMounted(async () => {
+  await fetchCourses();
+  if (isEditMode.value) {
+    await loadPromoForEdit(promoId.value);
+  }
+});
 </script>
 
 <template>
-  <div class="flex justify-center pl-60">
+  <div class="flex justify-center ">
     <section class="w-full max-w-[1920px] min-h-screen bg-gray-100">
       <div
         class="mx-auto flex h-[92px] w-full items-center justify-between border-b border-gray-200 bg-white px-8"
       >
         <h1 class="text-headline3 text-gray-900">
-          Add Promo code
+          {{ isEditMode ? "Edit Promo code" : "Add Promo code" }}
         </h1>
 
         <div class="flex items-center gap-4">
@@ -341,7 +408,7 @@ onMounted(fetchCourses);
             :disabled="isSubmitting"
             @click="handleCreateClick"
           >
-            Create
+            {{ isEditMode ? "Save" : "Create" }}
           </PrimaryButton>
         </div>
       </div>
@@ -389,8 +456,9 @@ onMounted(fetchCourses);
                   v-model="fixedAmountValue"
                   class="w-full min-w-0"
                   placeholder=""
-                  :clamp-to-min-max="false"
-                  :allow-negative="true"
+                  :min="0"
+                  :clamp-to-min-max="true"
+                  :allow-negative="false"
                   :disabled="discountType !== 'FIXED_AMOUNT'"
                   :error-message="fixedAmountFieldError"
                 />
@@ -413,8 +481,10 @@ onMounted(fetchCourses);
                   v-model="percentValue"
                   class="w-full min-w-0"
                   placeholder=""
-                  :clamp-to-min-max="false"
-                  :allow-negative="true"
+                  :min="0"
+                  :max="100"
+                  :clamp-to-min-max="true"
+                  :allow-negative="false"
                   :disabled="discountType !== 'PERCENT'"
                   :error-message="percentFieldError"
                 />
@@ -461,8 +531,8 @@ onMounted(fetchCourses);
 
     <Modal
       v-model:open="isConfirmCreateModalOpen"
-      title="Confirm promo code creation"
-      message="Do you want to create this promo code?"
+      :title="isEditMode ? 'Confirm promo code update' : 'Confirm promo code creation'"
+      :message="isEditMode ? 'Do you want to save changes to this promo code?' : 'Do you want to create this promo code?'"
       left-text="Cancel"
       right-text="Confirm"
       type="secondary"

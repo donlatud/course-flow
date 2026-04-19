@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import iconEdit from "@/assets/icon-edit.svg";
+import iconDelete from "@/assets/icon-delete.svg";
+
 type PromoRow = {
   id: string;
   code: string;
@@ -23,7 +26,7 @@ function formatNumber(value: number) {
 </script>
 
 <template>
-  <div class="overflow-x-auto w-full rounded-xl border border-gray-100 bg-white shadow-sm">
+  <div class="w-full overflow-x-auto rounded-xl border border-gray-100 bg-white shadow-sm">
     <table class="w-full border-collapse text-left">
       <thead>
         <tr class="border-b border-gray-100 bg-gray-300">
@@ -76,9 +79,14 @@ function formatNumber(value: number) {
                 class="inline-flex cursor-pointer items-center justify-center rounded-md p-1 opacity-50"
                 aria-label="Delete promo code"
                 disabled
-                @click="emit('delete', promo.id)"
               >
-                🗑
+                <img
+                  :src="iconDelete"
+                  alt=""
+                  class="pointer-events-none h-5 w-5"
+                  width="20"
+                  height="20"
+                />
               </button>
               <button
                 type="button"
@@ -86,7 +94,13 @@ function formatNumber(value: number) {
                 aria-label="Edit promo code"
                 @click="emit('edit', promo.id)"
               >
-                ✏️
+                <img
+                  :src="iconEdit"
+                  alt=""
+                  class="pointer-events-none h-5 w-5"
+                  width="20"
+                  height="20"
+                />
               </button>
             </div>
           </td>
@@ -95,4 +109,3 @@ function formatNumber(value: number) {
     </table>
   </div>
 </template>
-

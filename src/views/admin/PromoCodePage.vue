@@ -1,8 +1,10 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { computed, onMounted, ref } from "vue";
+import axios from "axios";
 import { Search } from "lucide-vue-next";
 import { useRouter } from "vue-router";
 import PromoTable from "@/components/admin/PromoTable.vue";
+import { api } from "@/lib/api";
 
 type PromoCodeRow = {
   id: string;
@@ -13,51 +15,117 @@ type PromoCodeRow = {
   createdDate: string;
 };
 
+type AdminPromoCodeListItem = {
+  id: string;
+  code: string;
+  minimumPurchaseAmount: number | string | null;
+  discountType: "PERCENTAGE" | "FIXED_AMOUNT";
+  /** From API; older servers may omit → treat as false. */
+  allCourses?: boolean;
+  courseTitles: string[];
+  createdAt: string | null;
+};
+
+function totalCoursesFromAdminPagePayload(raw: unknown): number {
+  if (raw && typeof raw === "object" && "totalElements" in raw) {
+    const te = (raw as { totalElements?: unknown }).totalElements;
+    if (typeof te === "number" && Number.isFinite(te)) {
+      return te;
+    }
+  }
+  return 0;
+}
+
+function mapApiToRow(item: AdminPromoCodeListItem, totalCoursesInDb: number): PromoCodeRow {
+  const minRaw = item.minimumPurchaseAmount;
+  const minimumPurchase =
+    minRaw == null
+      ? 0
+      : typeof minRaw === "number" && Number.isFinite(minRaw)
+        ? minRaw
+        : Number(String(minRaw).replace(/,/g, "").trim()) || 0;
+
+  const discountType: PromoCodeRow["discountType"] =
+    item.discountType === "PERCENTAGE" ? "Percent" : "Fixed amount";
+
+  const titles = item.courseTitles ?? [];
+  const linkedCount = titles.length;
+  const coversAllCourses =
+    item.allCourses === true ||
+    (totalCoursesInDb > 0 && linkedCount === totalCoursesInDb);
+
+  const coursesIncluded = coversAllCourses
+    ? "ALL"
+    : linkedCount === 0
+      ? "—"
+      : titles.join(", ");
+
+  const createdDate = item.createdAt
+    ? new Date(item.createdAt).toLocaleString("en-US", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+        hour: "numeric",
+        minute: "2-digit",
+        hour12: true,
+      })
+    : "—";
+
+  return {
+    id: item.id,
+    code: item.code,
+    minimumPurchase,
+    discountType,
+    coursesIncluded,
+    createdDate,
+  };
+}
+
 const searchText = ref("");
 const router = useRouter();
 
-const promoCodes = ref<PromoCodeRow[]>([
-  {
-    id: "1",
-    code: "NEWYEAR200",
-    minimumPurchase: 0,
-    discountType: "Fixed amount",
-    coursesIncluded: "All",
-    createdDate: "12/02/2022 10:30PM",
-  },
-  {
-    id: "2",
-    code: "MERRYX25",
-    minimumPurchase: 1200,
-    discountType: "Percent",
-    coursesIncluded: "Service Design Essential",
-    createdDate: "12/02/2022 10:30PM",
-  },
-  {
-    id: "3",
-    code: "BDAY2025",
-    minimumPurchase: 0,
-    discountType: "Fixed amount",
-    coursesIncluded: "Service Design Essential",
-    createdDate: "12/02/2022 10:30PM",
-  },
-  {
-    id: "4",
-    code: "NEWMEMBER",
-    minimumPurchase: 3000,
-    discountType: "Fixed amount",
-    coursesIncluded: "All",
-    createdDate: "12/02/2022 10:30PM",
-  },
-  {
-    id: "5",
-    code: "1212PKDS",
-    minimumPurchase: 0,
-    discountType: "Percent",
-    coursesIncluded: "All",
-    createdDate: "12/02/2022 10:30PM",
-  },
-]);
+const promoCodes = ref<PromoCodeRow[]>([]);
+const isLoading = ref(false);
+const loadError = ref<string | null>(null);
+
+async function fetchPromoCodes() {
+  loadError.value = null;
+  isLoading.value = true;
+  try {
+    let totalCoursesInDb = 0;
+    try {
+      const { data: pageData } = await api.get("/api/admin/courses", {
+        params: {
+          page: 0,
+          size: 1,
+          sortBy: "createdAt",
+          sortDir: "desc",
+        },
+      });
+      totalCoursesInDb = totalCoursesFromAdminPagePayload(pageData);
+    } catch {
+      totalCoursesInDb = 0;
+    }
+
+    const { data } = await api.get<AdminPromoCodeListItem[]>("/api/admin/courses/promo-codes");
+    promoCodes.value = Array.isArray(data) ? data.map((row) => mapApiToRow(row, totalCoursesInDb)) : [];
+  } catch (error) {
+    console.error("Failed to load promo codes:", error);
+    let detail = "Could not load promo codes.";
+    if (axios.isAxiosError(error) && error.response?.data && typeof error.response.data === "object") {
+      const m = (error.response.data as { message?: unknown }).message;
+      if (typeof m === "string" && m.trim() !== "") {
+        detail = m;
+      }
+    }
+    loadError.value = detail;
+    promoCodes.value = [];
+  } finally {
+    isLoading.value = false;
+  }
+}
+
+onMounted(fetchPromoCodes);
 
 const filteredPromoCodes = computed(() =>
   promoCodes.value.filter((promo) =>
@@ -67,6 +135,10 @@ const filteredPromoCodes = computed(() =>
 
 function goToCreatePromoCode() {
   router.push({ name: "admin-promo-code-create" });
+}
+
+function goToEditPromoCode(promoId: string) {
+  router.push({ name: "admin-promo-code-edit", params: { promoId } });
 }
 </script>
 
@@ -103,14 +175,24 @@ function goToCreatePromoCode() {
 
       <div class="min-h-0 flex-1 overflow-y-auto px-10 pt-12">
         <div class="mx-auto w-full">
-          <PromoTable :promos="filteredPromoCodes" />
-
-          <p
-            v-if="filteredPromoCodes.length === 0"
-            class="py-8 text-center text-body3 text-gray-500"
-          >
-            No promo codes found.
+          <p v-if="loadError" class="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-body3 text-red-800">
+            {{ loadError }}
           </p>
+
+          <p v-if="isLoading" class="py-8 text-center text-body3 text-gray-500">
+            Loading…
+          </p>
+
+          <template v-else>
+            <PromoTable :promos="filteredPromoCodes" @edit="goToEditPromoCode" />
+
+            <p
+              v-if="filteredPromoCodes.length === 0"
+              class="py-8 text-center text-body3 text-gray-500"
+            >
+              No promo codes found.
+            </p>
+          </template>
         </div>
       </div>
     </section>

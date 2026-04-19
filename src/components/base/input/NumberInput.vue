@@ -39,6 +39,8 @@ const internalValue = useVModel(props, "modelValue", emit, {
 
 const isFocused = ref(false);
 
+const hasError = computed(() => Boolean(String(props.errorMessage ?? "").trim()));
+
 function toCleanedNumericString(raw: unknown): string {
   // Vue may pass a number from <input type="number">; never call .replace on a number.
   return String(raw ?? "").replace(/[^\d.]/g, "");
@@ -78,8 +80,8 @@ watch(
         autocomplete="off"
         :placeholder="placeholder ?? '0'"
         :step="step"
-        :min="props.clampToMinMax !== false ? min : undefined"
-        :max="props.clampToMinMax !== false ? max : undefined"
+        :min="props.clampToMinMax !== false ? props.min : undefined"
+        :max="props.clampToMinMax !== false ? props.max : undefined"
         :disabled="disabled"
         :aria-invalid="hasError || undefined"
         :class="cn(
@@ -98,7 +100,7 @@ watch(
     </div>
 
     <p v-if="hasError" class="text-body4 text-(--color-purple) mt-0.5">
-      {{ errorMessage }}
+      {{ props.errorMessage }}
     </p>
 
     <p
