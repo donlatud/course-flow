@@ -172,6 +172,41 @@ function validateCreatePayload() {
     return false;
   }
 
+  if (courseDraftState.promoEnabled) {
+    if (!courseDraftState.promoCode.trim()) {
+      appToast.error(
+        "Promo code is required",
+        "Please enter a promo code.",
+      );
+      return false;
+    }
+
+    if (!courseDraftState.promoMinPurchase.trim()) {
+      appToast.error(
+        "Minimum purchase amount is required",
+        "Please enter the minimum purchase amount.",
+      );
+      return false;
+    }
+
+    const isPct = courseDraftState.promoDiscountType === "%";
+    if (isPct && !courseDraftState.promoDiscountPercent.trim()) {
+      appToast.error(
+        "Discount percentage is required",
+        "Please enter the discount percentage.",
+      );
+      return false;
+    }
+
+    if (!isPct && !courseDraftState.promoDiscountThb.trim()) {
+      appToast.error(
+        "Discount amount is required",
+        "Please enter the discount amount.",
+      );
+      return false;
+    }
+  }
+
   const duplicateLesson = (() => {
     const seen = new Set<string>();
     for (const lesson of courseDraftState.lessons) {

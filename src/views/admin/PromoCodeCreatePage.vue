@@ -373,10 +373,14 @@ async function confirmCreatePromo() {
     let detail = isEditMode.value
       ? "Could not update the promo code. Please try again."
       : "Could not create the promo code. Please try again.";
-    if (axios.isAxiosError(error) && error.response?.data && typeof error.response.data === "object") {
-      const m = (error.response.data as { message?: unknown }).message;
-      if (typeof m === "string" && m.trim() !== "") {
-        detail = m;
+    if (axios.isAxiosError(error) && error.response) {
+      if (error.response.status === 409) {
+        detail = "A promo code with this code already exists. Please use a different code.";
+      } else if (error.response.data && typeof error.response.data === "object") {
+        const m = (error.response.data as { message?: unknown }).message;
+        if (typeof m === "string" && m.trim() !== "") {
+          detail = m;
+        }
       }
     }
     window.alert(detail);
