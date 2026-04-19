@@ -158,7 +158,7 @@ function goToEditPromoCode(promoId: string) {
             <input
               v-model="searchText"
               type="text"
-              placeholder="Search..."
+              placeholder="Search by promo code..."
               class="w-full border-0 bg-transparent text-body3 text-gray-800 placeholder:text-gray-500 focus:outline-none"
             />
           </label>

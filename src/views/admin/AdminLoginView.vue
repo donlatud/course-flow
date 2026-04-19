@@ -64,10 +64,10 @@ const handleLogin = async () => {
         refresh_token: refreshToken,
       });
       if (sessionError) {
-        setAdminAccessTokenFallback(accessToken);
+        setAdminAccessTokenFallback(accessToken, refreshToken);
       }
     } else {
-      setAdminAccessTokenFallback(accessToken);
+      setAdminAccessTokenFallback(accessToken, refreshToken);
     }
 
     const {

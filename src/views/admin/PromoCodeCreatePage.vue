@@ -6,6 +6,7 @@ import CustomInput from "@/components/base/input/CustomInput.vue";
 import NumberInput from "@/components/base/input/NumberInput.vue";
 import CourseMultiSelect from "@/components/base/input/CourseMultiSelect.vue";
 import Modal from "@/components/base/modal/Modal.vue";
+import SubmitProgressOverlay from "@/components/base/SubmitProgressOverlay.vue";
 import PrimaryButton from "@/components/base/button/PrimaryButton.vue";
 import SecondaryButton from "@/components/base/button/SecondaryButton.vue";
 import { extractCourseRowsFromAdminListPayload } from "@/lib/adminCoursesApi";
@@ -119,6 +120,7 @@ const isConfirmCreateModalOpen = ref(false);
 const pendingDiscountType = ref<DiscountType | null>(null);
 const coursesIncluded = ref<string[]>([]);
 const allCourses = ref<CourseApiItem[]>([]);
+const isLoading = ref(true);
 const isSubmitting = ref(false);
 
 const promoCodeError = ref("");
@@ -232,8 +234,8 @@ async function fetchCourses() {
         sortDir: "desc",
       },
     });
-    const rows = extractCourseRowsFromAdminListPayload(data);
-    allCourses.value = rows.map((course: CourseApiItem) => ({
+    const rows = extractCourseRowsFromAdminListPayload(data) as CourseApiItem[];
+    allCourses.value = rows.map((course) => ({
       id: String(course.id),
       title: course.title,
       price: course.price,
@@ -244,7 +246,7 @@ async function fetchCourses() {
   }
 }
 
-async function loadPromoForEdit(id: string) {
+async function loadPromoForEdit(id: string): Promise<boolean> {
   try {
     const { data } = await api.get<AdminPromoCodeDetail>(`/api/admin/courses/promo-codes/${id}`);
     promoCode.value = data.code ?? "";
@@ -264,6 +266,7 @@ async function loadPromoForEdit(id: string) {
     coursesIncluded.value = Array.isArray(data.courseIds)
       ? data.courseIds.map((cid) => String(cid))
       : [];
+    return true;
   } catch (error) {
     console.error("Failed to load promo code for edit:", error);
     let detail = "Could not load this promo code.";
@@ -275,6 +278,7 @@ async function loadPromoForEdit(id: string) {
     }
     window.alert(detail);
     router.push({ name: "admin-promo-code" });
+    return false;
   }
 }
 
@@ -382,44 +386,60 @@ async function confirmCreatePromo() {
 }
 
 onMounted(async () => {
-  await fetchCourses();
-  if (isEditMode.value) {
-    await loadPromoForEdit(promoId.value);
+  isLoading.value = true;
+  try {
+    await fetchCourses();
+  } catch (error) {
+    console.error("Failed to load courses for promo form:", error);
   }
+  if (isEditMode.value) {
+    const ok = await loadPromoForEdit(promoId.value);
+    if (!ok) return;
+  }
+  isLoading.value = false;
 });
 </script>
 
 <template>
   <div class="flex justify-center ">
     <section class="w-full max-w-[1920px] min-h-screen bg-gray-100">
+      <!-- Initial load (courses list + promo detail in edit mode) -->
       <div
-        class="mx-auto flex h-[92px] w-full items-center justify-between border-b border-gray-200 bg-white px-8"
+        v-if="isLoading"
+        class="flex min-h-screen items-center justify-center text-body3 text-gray-500"
       >
-        <h1 class="text-headline3 text-gray-900">
-          {{ isEditMode ? "Edit Promo code" : "Add Promo code" }}
-        </h1>
-
-        <div class="flex items-center gap-4">
-          <SecondaryButton class="h-[48px]! w-[104px]! px-0!" @click="goBackToPromoList">
-            Cancel
-          </SecondaryButton>
-          <PrimaryButton
-            class="h-[48px]! w-[120px]! px-0!"
-            :disabled="isSubmitting"
-            @click="handleCreateClick"
-          >
-            {{ isEditMode ? "Save" : "Create" }}
-          </PrimaryButton>
-        </div>
+        Loading...
       </div>
 
-      <div class="px-8 py-8">
-        <div class="w-full rounded-2xl border border-gray-200 bg-white px-10 py-9">
+      <template v-else>
+        <div
+          class="mx-auto flex h-[92px] w-full items-center justify-between border-b border-gray-200 bg-white px-8"
+        >
+          <h1 class="text-headline3 text-gray-900">
+            {{ isEditMode ? "Edit Promo code" : "Add Promo code" }}
+          </h1>
+
+          <div class="flex items-center gap-4">
+            <SecondaryButton class="h-[48px]! w-[104px]! px-0!" @click="goBackToPromoList">
+              Cancel
+            </SecondaryButton>
+            <PrimaryButton
+              class="h-[48px]! w-[120px]! px-0!"
+              :disabled="isSubmitting"
+              @click="handleCreateClick"
+            >
+              {{ isEditMode ? "Save" : "Create" }}
+            </PrimaryButton>
+          </div>
+        </div>
+
+        <div class="px-8 py-8">
+          <div class="w-full rounded-2xl border border-gray-200 bg-white px-10 py-9">
           <div class="grid grid-cols-1 gap-10 lg:grid-cols-2">
             <CustomInput
               v-model="promoCode"
               label="Set promo code*"
-              placeholder=""
+              placeholder="e.g. SAVE2025"
               :error="Boolean(promoCodeError)"
               :error-message="promoCodeError"
             />
@@ -427,7 +447,8 @@ onMounted(async () => {
             <NumberInput
               v-model="minimumPurchase"
               label="Minimum purchase amount (THB)*"
-              placeholder=""
+              placeholder="0"
+              supporting-text="Please enter numbers only"
               :min="0"
               :error-message="minimumPurchaseError"
             />
@@ -455,7 +476,8 @@ onMounted(async () => {
                 <NumberInput
                   v-model="fixedAmountValue"
                   class="w-full min-w-0"
-                  placeholder=""
+                  placeholder="0"
+                  supporting-text="Please enter numbers only"
                   :min="0"
                   :clamp-to-min-max="true"
                   :allow-negative="false"
@@ -480,7 +502,8 @@ onMounted(async () => {
                 <NumberInput
                   v-model="percentValue"
                   class="w-full min-w-0"
-                  placeholder=""
+                  placeholder="e.g. 10"
+                  supporting-text="0–100"
                   :min="0"
                   :max="100"
                   :clamp-to-min-max="true"
@@ -505,6 +528,7 @@ onMounted(async () => {
                 :key="courseSelectKey"
                 v-model="coursesIncluded"
                 label="Courses Included"
+                placeholder="Select courses for this promo"
                 :options="courseMultiOptions"
               />
             </div>
@@ -514,8 +538,19 @@ onMounted(async () => {
             </p>
           </div>
         </div>
-      </div>
+        </div>
+      </template>
     </section>
+
+    <SubmitProgressOverlay
+      :visible="isSubmitting"
+      :title="isEditMode ? 'Saving promo code' : 'Creating promo code'"
+      :description="
+        isEditMode
+          ? 'Updating your promo code. Please wait.'
+          : 'Creating your promo code. Please wait.'
+      "
+    />
 
     <Modal
       v-model:open="isSwitchDiscountTypeModalOpen"
