@@ -3,7 +3,9 @@ import { computed, onMounted, ref } from "vue";
 import { Search } from "lucide-vue-next";
 import { useRouter } from "vue-router";
 import PromoTable from "@/components/admin/PromoTable.vue";
+import type { PromoSortKey, PromoSortDir } from "@/components/admin/PromoTable.vue";
 import { api } from "@/lib/api";
+import Modal from "@/components/base/modal/Modal.vue";
 import Pagination from "@/components/ui/pagination/Pagination.vue";
 import PaginationContent from "@/components/ui/pagination/PaginationContent.vue";
 import PaginationItem from "@/components/ui/pagination/PaginationItem.vue";
@@ -27,6 +29,7 @@ type AdminPromoCodeListItem = {
   /** From API; older servers may omit → treat as false. */
   allCourses?: boolean;
   courseTitles: string[];
+  coursesIncludedLength: number;
   createdAt: string | null;
 };
 
@@ -97,6 +100,9 @@ const currentPage = ref(1);
 const totalElements = ref(0);
 const totalPages = computed(() => Math.ceil(totalElements.value / PAGE_SIZE));
 
+const sortBy = ref<PromoSortKey>("createdAt");
+const sortDir = ref<PromoSortDir>("desc");
+
 function getTotal(raw: unknown): number {
   if (raw && typeof raw === "object" && "totalElements" in raw) {
     const te = (raw as { totalElements?: unknown }).totalElements;
@@ -132,8 +138,8 @@ async function fetchPromoCodes() {
       params: {
         page: pageNum,
         size: PAGE_SIZE,
-        sortBy: "createdAt",
-        sortDir: "desc",
+        sortBy: sortBy.value,
+        sortDir: sortDir.value,
       },
     });
 
@@ -162,6 +168,16 @@ const emptyMessage = computed(() => {
 
 function onPageChange(page: number) {
   currentPage.value = page;
+  void fetchPromoCodes();
+}
+
+function onSort(key: PromoSortKey) {
+  if (sortBy.value === key) {
+    sortDir.value = sortDir.value === "asc" ? "desc" : "asc";
+  } else {
+    sortBy.value = key;
+    sortDir.value = "desc";
+  }
   void fetchPromoCodes();
 }
 
@@ -251,7 +267,10 @@ function goToEditPromoCode(promoId: string) {
           <PromoTable
             v-else
             :promos="filteredPromoCodes"
+            :sort-by="sortBy"
+            :sort-dir="sortDir"
             @edit="goToEditPromoCode"
+            @sort="onSort"
           />
 
           <p
