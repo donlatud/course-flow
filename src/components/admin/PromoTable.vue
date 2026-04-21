@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import iconEdit from "@/assets/icon-edit.svg";
+import iconDelete from "@/assets/icon-delete.svg";
 import { ArrowDown, ArrowUp, ArrowUpDown } from "lucide-vue-next";
 
 export type PromoSortKey = "minimumPurchaseAmount" | "discountType" | "createdAt" | "coursesIncludedLength";
@@ -28,6 +29,7 @@ const props = withDefaults(
 
 const emit = defineEmits<{
   edit: [promoId: string];
+  delete: [promoId: string];
   sort: [key: PromoSortKey];
 }>();
 
@@ -207,7 +209,21 @@ function ariaSortFor(key: PromoSortKey): "ascending" | "descending" | "none" {
             {{ promo.createdDate }}
           </td>
           <td class="px-6 py-4 text-center">
-            <div class="flex justify-center">
+            <div class="flex justify-center gap-3">
+              <button
+                type="button"
+                class="inline-flex cursor-pointer items-center justify-center rounded-md p-1 transition hover:bg-red-50 hover:opacity-90 active:opacity-100"
+                aria-label="Delete promo code"
+                @click="emit('delete', promo.id)"
+              >
+                <img
+                  :src="iconDelete"
+                  alt=""
+                  class="pointer-events-none h-5 w-5"
+                  width="20"
+                  height="20"
+                />
+              </button>
               <button
                 type="button"
                 class="inline-flex cursor-pointer items-center justify-center rounded-md p-1 transition hover:bg-yellow-50 hover:opacity-90 active:opacity-100"

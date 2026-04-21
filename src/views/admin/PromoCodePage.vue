@@ -103,6 +103,10 @@ const totalPages = computed(() => Math.ceil(totalElements.value / PAGE_SIZE));
 const sortBy = ref<PromoSortKey>("createdAt");
 const sortDir = ref<PromoSortDir>("desc");
 
+const deleteModalOpen = ref(false);
+const promoToDelete = ref<{ id: string; code: string } | null>(null);
+const isDeleting = ref(false);
+
 function getTotal(raw: unknown): number {
   if (raw && typeof raw === "object" && "totalElements" in raw) {
     const te = (raw as { totalElements?: unknown }).totalElements;
@@ -196,6 +200,31 @@ function goToCreatePromoCode() {
 function goToEditPromoCode(promoId: string) {
   router.push({ name: "admin-promo-code-edit", params: { promoId } });
 }
+
+function openDeleteModal(promoId: string) {
+  const promo = promoCodes.value.find((p) => p.id === promoId);
+  if (promo) {
+    promoToDelete.value = { id: promo.id, code: promo.code };
+    deleteModalOpen.value = true;
+  }
+}
+
+async function confirmDeletePromo() {
+  if (!promoToDelete.value) return;
+
+  try {
+    isDeleting.value = true;
+    await api.delete(`/api/admin/courses/promo-codes/${promoToDelete.value.id}`);
+    deleteModalOpen.value = false;
+    promoToDelete.value = null;
+    await fetchPromoCodes();
+  } catch (error) {
+    console.error(error);
+    errorMessage.value = "Failed to delete promo code.";
+  } finally {
+    isDeleting.value = false;
+  }
+}
 </script>
 
 <template>
@@ -229,7 +258,7 @@ function goToEditPromoCode(promoId: string) {
         </div>
       </div>
 
-      <div class="min-h-0 flex-1 overflow-y-auto px-10 pt-12">
+      <div class="min-h-0 flex-1 overflow-y-auto px-10 pb-12 pt-12">
         <div class="mx-auto w-full">
           <div
             v-if="isLoading"
@@ -270,6 +299,7 @@ function goToEditPromoCode(promoId: string) {
             :sort-by="sortBy"
             :sort-dir="sortDir"
             @edit="goToEditPromoCode"
+            @delete="openDeleteModal"
             @sort="onSort"
           />
 
@@ -284,7 +314,7 @@ function goToEditPromoCode(promoId: string) {
 
       <div
         v-if="totalPages > 1"
-        class="mt-8 flex w-full flex-wrap items-center justify-center gap-2 px-4 py-3 pb-10"
+        class="mt-8 flex w-full flex-wrap items-center justify-center gap-2 px-4 pb-3 pb-10"
       >
         <Pagination
           v-model:page="currentPage"
@@ -322,5 +352,19 @@ function goToEditPromoCode(promoId: string) {
         </Pagination>
       </div>
     </section>
+
+    <Modal
+      v-model:open="deleteModalOpen"
+      :title="`Delete promo code`"
+      :message="`Are you sure you want to delete the promo code '${promoToDelete?.code}'?`"
+      left-text="Cancel"
+      right-text="Delete"
+      variant="danger"
+      :class="'max-w-[400px]'"
+      :left-button-class="'flex-1'"
+      :right-button-class="'flex-1'"
+      @left-click="deleteModalOpen = false"
+      @right-click="confirmDeletePromo"
+    />
   </div>
 </template>

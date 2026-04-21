@@ -5,6 +5,9 @@ import { Search } from "lucide-vue-next";
 import { useRouter } from "vue-router";
 import Table from "@/components/admin/CourseTable.vue";
 import { api } from "@/lib/api";
+import { deleteCourse } from "@/lib/adminCoursesApi";
+import { appToast } from "@/components/base/toast";
+import Modal from "@/components/base/modal/Modal.vue";
 import type {
   CourseItem,
   CourseSortDir,
@@ -38,6 +41,10 @@ const router = useRouter();
 
 const PAGE_SIZE = 10;
 const currentPage = ref(1);
+const deleteConfirmOpen = ref(false);
+const deleteConfirmCourseId = ref<string | null>(null);
+const deleteConfirmCourseName = ref("");
+const isDeleting = ref(false);
 /** Synced from search after debounce; drives API `search` param. */
 const debouncedSearch = ref("");
 
@@ -176,6 +183,40 @@ function goToCourseEdit(courseId: string) {
   resetCourseDraft();
   router.push({ name: "admin-course-edit", params: { courseId } });
 }
+
+function openDeleteConfirm(courseId: string) {
+  const item = courses.value.find((c) => c.id === courseId);
+  deleteConfirmCourseId.value = courseId;
+  deleteConfirmCourseName.value = item?.name ?? courseId;
+  deleteConfirmOpen.value = true;
+}
+
+async function confirmDelete() {
+  const id = deleteConfirmCourseId.value;
+  if (!id) return;
+  isDeleting.value = true;
+  try {
+    await deleteCourse(id);
+    deleteConfirmOpen.value = false;
+    deleteConfirmCourseId.value = null;
+    appToast.success("Course deleted", `"${deleteConfirmCourseName.value}" has been removed.`);
+    await fetchCourses();
+  } catch (err: unknown) {
+    const message =
+      err && typeof err === "object" && "response" in err
+        ? (err as { response?: { data?: { message?: string } } }).response?.data?.message
+        : null;
+    appToast.error("Delete failed", message ?? "Could not delete the course. It may have active enrollments.");
+  } finally {
+    isDeleting.value = false;
+  }
+}
+
+function cancelDelete() {
+  deleteConfirmOpen.value = false;
+  deleteConfirmCourseId.value = null;
+  deleteConfirmCourseName.value = "";
+}
 </script>
 
 <template>
@@ -255,6 +296,21 @@ function goToCourseEdit(courseId: string) {
             :sort-dir="sortDir"
             @edit="goToCourseEdit"
             @sort="onSortColumn"
+            @delete="openDeleteConfirm"
+          />
+
+          <Modal
+            v-model:open="deleteConfirmOpen"
+            title="Delete course?"
+            :message="`Are you sure you want to delete &quot;${deleteConfirmCourseName}&quot;? This action cannot be undone.`"
+            left-text="Delete"
+            right-text="Cancel"
+            type="secondary"
+            variant="danger"
+            :left-button-disabled="isDeleting"
+            :left-button-class="isDeleting ? 'opacity-60' : ''"
+            @left-click="confirmDelete"
+            @right-click="cancelDelete"
           />
 
           <div

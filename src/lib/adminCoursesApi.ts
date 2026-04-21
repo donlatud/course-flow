@@ -1,3 +1,5 @@
+import { api } from "@/lib/api";
+
 /**
  * Normalizes GET /api/admin/courses responses:
  * - Spring Data {@code Page}: {@code { content: T[], totalElements, ... }}
@@ -12,4 +14,8 @@ export function extractCourseRowsFromAdminListPayload(raw: unknown): unknown[] {
     return Array.isArray(content) ? content : [];
   }
   return [];
+}
+
+export async function deleteCourse(courseId: string): Promise<void> {
+  await api.delete(`/api/admin/courses/${courseId}`);
 }

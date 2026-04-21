@@ -49,6 +49,7 @@ const props = withDefaults(
 const emit = defineEmits<{
   edit: [courseId: string];
   sort: [key: CourseSortKey];
+  delete: [courseId: string];
 }>();
 
 function ariaSortFor(key: CourseSortKey): "ascending" | "descending" | "none" {
@@ -175,7 +176,7 @@ function ariaSortFor(key: CourseSortKey): "ascending" | "descending" | "none" {
             </button>
           </th>
           <th
-            class="px-6 py-4 text-body3 text-gray-800"
+            class="px-4 py-4 text-body3 text-gray-800"
             scope="col"
             :aria-sort="ariaSortFor('createdAt')"
           >
@@ -259,8 +260,8 @@ function ariaSortFor(key: CourseSortKey): "ascending" | "descending" | "none" {
               class="h-16 w-24 rounded-md object-cover shadow-sm"
             >
           </td>
-          <td class="px-6 py-4">
-            <span class="font-medium text-slate-700">
+          <td class="px-6 w-[450px]  py-4">
+            <span class="font-medium  text-slate-700">
               {{ course.name }}
             </span>
           </td>
@@ -278,7 +279,7 @@ function ariaSortFor(key: CourseSortKey): "ascending" | "descending" | "none" {
           <td class="px-6 py-4 font-medium text-slate-700">
             {{ course.price }}
           </td>
-          <td class="px-6 py-4 text-sm text-slate-500">
+          <td class="px-0 py-4 text-sm text-slate-500">
             {{ formatTableDateTime(course.createdAt) }}
           </td>
           <td class="px-6 py-4 text-sm text-slate-500">
@@ -288,9 +289,9 @@ function ariaSortFor(key: CourseSortKey): "ascending" | "descending" | "none" {
             <div class="flex justify-center gap-3">
               <button
                 type="button"
-                class="inline-flex cursor-pointer items-center justify-center rounded-md p-1 opacity-50"
+                class="inline-flex cursor-pointer items-center justify-center rounded-md p-1 transition hover:bg-red-50 hover:opacity-90 active:opacity-100"
                 aria-label="Delete course"
-                disabled
+                @click="emit('delete', course.id)"
               >
                 <img
                   :src="iconDelete"

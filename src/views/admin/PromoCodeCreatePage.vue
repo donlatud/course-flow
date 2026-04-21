@@ -9,6 +9,7 @@ import Modal from "@/components/base/modal/Modal.vue";
 import SubmitProgressOverlay from "@/components/base/SubmitProgressOverlay.vue";
 import PrimaryButton from "@/components/base/button/PrimaryButton.vue";
 import SecondaryButton from "@/components/base/button/SecondaryButton.vue";
+import { appToast } from "@/components/base/toast";
 import { extractCourseRowsFromAdminListPayload } from "@/lib/adminCoursesApi";
 import { api } from "@/lib/api";
 
@@ -276,7 +277,7 @@ async function loadPromoForEdit(id: string): Promise<boolean> {
         detail = m;
       }
     }
-    window.alert(detail);
+    appToast.error("Error", detail);
     router.push({ name: "admin-promo-code" });
     return false;
   }
@@ -383,7 +384,7 @@ async function confirmCreatePromo() {
         }
       }
     }
-    window.alert(detail);
+    appToast.error(isEditMode.value ? "Update failed" : "Create failed", detail);
   } finally {
     isSubmitting.value = false;
   }
@@ -454,6 +455,7 @@ onMounted(async () => {
               placeholder="0"
               supporting-text="Please enter numbers only"
               :min="0"
+              :error="Boolean(minimumPurchaseError)"
               :error-message="minimumPurchaseError"
             />
           </div>
@@ -486,6 +488,7 @@ onMounted(async () => {
                   :clamp-to-min-max="true"
                   :allow-negative="false"
                   :disabled="discountType !== 'FIXED_AMOUNT'"
+                  :error="Boolean(fixedAmountFieldError)"
                   :error-message="fixedAmountFieldError"
                 />
               </label>
@@ -513,6 +516,7 @@ onMounted(async () => {
                   :clamp-to-min-max="true"
                   :allow-negative="false"
                   :disabled="discountType !== 'PERCENT'"
+                  :error="Boolean(percentFieldError)"
                   :error-message="percentFieldError"
                 />
               </label>
@@ -520,7 +524,7 @@ onMounted(async () => {
 
             <p
               v-if="discountTypeError"
-              class="mt-2 text-body4 text-(--color-purple)"
+              class="mt-2 text-body4 text-red-500"
             >
               {{ discountTypeError }}
             </p>
