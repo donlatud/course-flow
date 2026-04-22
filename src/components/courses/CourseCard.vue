@@ -11,7 +11,7 @@
     />
 
     <!-- Course Content -->
-    <div class="flex flex-col gap-1 p-6 grow">
+    <div class="flex flex-col gap-1 p-6 grow bg-white">
       <div class="flex items-center justify-between gap-3">
         <span class="text-body4 text-orange-500">Course</span>
         <AssignmentBadge

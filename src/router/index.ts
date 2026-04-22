@@ -21,6 +21,7 @@ import MyCoursesView from "@/views/MyCoursesView.vue";
 import ProfileView from "@/views/ProfileView.vue";
 import MyAssignmentsView from "@/views/MyAssignmentsView.vue";
 import CourseAssignmentsView from "@/views/CourseAssignmentsView.vue";
+import MyWishlistView from "@/views/MyWishlistView.vue";
 import { api } from "@/lib/api";
 import { hasApiAuthToken } from "@/lib/adminSession";
 
@@ -68,6 +69,7 @@ const router = createRouter({
     { path: "/register", name: "register", component: RegisterView },
     { path: "/login", name: "login", component: LoginView },
     { path: "/my-courses", name: "my-courses", component: MyCoursesView },
+    { path: "/my-wishlist", name: "my-wishlist", component: MyWishlistView },
     {
       path: "/my-assignments",
       name: "my-assignments",
