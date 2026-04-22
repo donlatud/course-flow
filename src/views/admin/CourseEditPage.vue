@@ -646,7 +646,7 @@ function handleUpdateAsPublic() {
               v-model="courseDraftState.attachmentFile"
               :existing-url="existingAttachmentUrl ?? undefined"
               title="Attach File (Optional)"
-              subtitle="Supported file types: .pdf, .doc, .docx. Max file size: 10 MB"
+              subtitle="Supported file types: .pdf, .doc, .docx. Max file size: 50 MB"
               uploadtext="Upload file"
             />
           </div>

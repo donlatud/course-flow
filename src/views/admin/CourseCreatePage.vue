@@ -565,7 +565,7 @@ function handleCreateAsPublic() {
               <AttachFileInput
                 v-model="courseDraftState.attachmentFile"
                 title="Attach File (Optional)"
-                subtitle="Supported file types: .pdf, .doc, .docx. Max file size: 10 MB"
+                subtitle="Supported file types: .pdf, .doc, .docx. Max file size: 50 MB"
                 uploadtext="Upload file"
               />
             </div>
