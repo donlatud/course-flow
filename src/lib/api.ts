@@ -4,6 +4,7 @@ import { supabase } from "@/lib/supabase";
 import {
   clearAdminAccessTokenFallback,
   getAdminAccessTokenFallback,
+  getAdminRefreshTokenFallback,
 } from "@/lib/adminSession";
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8080";
@@ -15,8 +16,43 @@ export const api = axios.create({
   },
 });
 
-type ApiRequestConfig = InternalAxiosRequestConfig & { skipAuthRedirect?: boolean };
-type RequestWithAuthRetry = ApiRequestConfig & { _authRetry?: boolean };
+export type ApiRequestConfig = InternalAxiosRequestConfig & {
+  skipAuthRedirect?: boolean;
+  /** Set after one refresh+retry so we do not loop */
+  _retryAfter401?: boolean;
+};
+
+/** Single in-flight refresh so parallel 401s do not stampede Supabase */
+let refreshAccessTokenPromise: Promise<string | undefined> | null = null;
+
+async function refreshAccessTokenOnce(): Promise<string | undefined> {
+  if (!refreshAccessTokenPromise) {
+    refreshAccessTokenPromise = (async () => {
+      const { data: r1, error: e1 } = await supabase.auth.refreshSession();
+      if (!e1 && r1.session?.access_token) {
+        return r1.session.access_token;
+      }
+
+      const access = getAdminAccessTokenFallback();
+      const refresh = getAdminRefreshTokenFallback();
+      if (access && refresh) {
+        const { data: r2, error: e2 } = await supabase.auth.setSession({
+          access_token: access,
+          refresh_token: refresh,
+        });
+        if (!e2 && r2.session?.access_token) {
+          clearAdminAccessTokenFallback();
+          return r2.session.access_token;
+        }
+      }
+
+      return undefined;
+    })().finally(() => {
+      refreshAccessTokenPromise = null;
+    });
+  }
+  return refreshAccessTokenPromise;
+}
 
 function setBearer(
   config: InternalAxiosRequestConfig,
@@ -52,22 +88,24 @@ api.interceptors.request.use(async (config) => {
 });
 
 /**
- * Phase D: JWT หมดอายุ / ไม่มีสิทธิ์ — ส่งไป login พร้อมกลับมาที่หน้าเดิมหลัง sign-in
+ * Phase D: JWT หมดอายุ — ลอง refresh (รวมศูนย์) แล้ว retry request หนึ่งครั้งก่อน
+ * ถ้ายัง 401 / refresh ไม่ได้ — ส่งไป login พร้อมกลับมาที่หน้าเดิมหลัง sign-in
  * ไม่ redirect บน /login, /register, /admin/login — ให้แต่ละหน้าแสดง error เอง
- * (แอดมินใช้คู่กับ `skipAuthRedirect` บน request สำคัญ — เผื่อมีหลาย request บนหน้าเดียวกัน)
- *
- * ก่อน redirect: ลอง `refreshSession()` แล้ว retry request หนึ่งครั้ง — ลดการเด้ง login บ่อย
- * เมื่อ access token หมดอายุแต่ refresh token ยังใช้ได้ (Navbar ยังโชว์ชื่อเพราะ session ใน Supabase ยังอยู่)
+ * `skipAuthRedirect`: ไม่ทำ window.location แต่ยัง refresh+retry ได้ (เช่น router guard)
  */
 api.interceptors.response.use(
   (response) => response,
-  async (error) => {
-    const status = axios.isAxiosError(error) ? error.response?.status : undefined;
+  async (error: unknown) => {
+    const ax = error as {
+      config?: ApiRequestConfig & { _authRetry?: boolean };
+      response?: { status?: number };
+    };
+    const status = ax.response?.status;
     if (status !== 401) {
       return Promise.reject(error);
     }
 
-    const originalRequest = error.config as RequestWithAuthRetry | undefined;
+    const originalRequest = ax.config;
     if (originalRequest && !originalRequest._authRetry) {
       originalRequest._authRetry = true;
       const { data: refreshed, error: refreshErr } =
@@ -80,19 +118,32 @@ api.interceptors.response.use(
       }
     }
 
-    const ax = error as {
-      config?: ApiRequestConfig;
-      response?: { status?: number };
-    };
     const config = ax.config;
-    const url = String(config?.url ?? "");
+    if (!config) {
+      return Promise.reject(error);
+    }
+
+    const url = String(config.url ?? "");
 
     if (url.includes("/api/auth/")) {
       clearAdminAccessTokenFallback();
       return Promise.reject(error);
     }
 
-    if (config?.skipAuthRedirect) {
+    if (!config._retryAfter401) {
+      const newToken = await refreshAccessTokenOnce();
+      if (newToken) {
+        config._retryAfter401 = true;
+        setBearer(config, newToken);
+        try {
+          return await api.request(config);
+        } catch (retryErr) {
+          return Promise.reject(retryErr);
+        }
+      }
+    }
+
+    if (config.skipAuthRedirect) {
       return Promise.reject(error);
     }
 
@@ -100,6 +151,8 @@ api.interceptors.response.use(
     if (path === "/login" || path === "/register" || path === "/admin/login") {
       return Promise.reject(error);
     }
+
+    clearAdminAccessTokenFallback();
 
     const fullPath = path + window.location.search;
     const redirect = encodeURIComponent(fullPath);

@@ -5,17 +5,32 @@ import { supabase } from "@/lib/supabase";
  * Same JWT as backend returns; cleared on student login / admin logout.
  */
 const STORAGE_KEY = "courseflow.admin.accessToken";
+const REFRESH_STORAGE_KEY = "courseflow.admin.refreshToken";
 
-export function setAdminAccessTokenFallback(token: string) {
+/** Persist access; optionally refresh so 401 handler can call setSession and renew JWT */
+export function setAdminAccessTokenFallback(
+  token: string,
+  refreshToken?: string | null,
+) {
   localStorage.setItem(STORAGE_KEY, token);
+  if (refreshToken != null && String(refreshToken).trim() !== "") {
+    localStorage.setItem(REFRESH_STORAGE_KEY, String(refreshToken).trim());
+  } else {
+    localStorage.removeItem(REFRESH_STORAGE_KEY);
+  }
 }
 
 export function clearAdminAccessTokenFallback() {
   localStorage.removeItem(STORAGE_KEY);
+  localStorage.removeItem(REFRESH_STORAGE_KEY);
 }
 
 export function getAdminAccessTokenFallback(): string | null {
   return localStorage.getItem(STORAGE_KEY);
+}
+
+export function getAdminRefreshTokenFallback(): string | null {
+  return localStorage.getItem(REFRESH_STORAGE_KEY);
 }
 
 /** True if we can attach a Bearer token (Supabase session or admin fallback). */

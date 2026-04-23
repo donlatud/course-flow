@@ -1,100 +1,68 @@
 <script setup lang="ts">
-import type {
-  CourseItem,
-  CourseSortDir,
-  CourseSortKey,
-  CourseStatus,
-} from "@/types/admin-course";
 import iconEdit from "@/assets/icon-edit.svg";
 import iconDelete from "@/assets/icon-delete.svg";
-import { format, isValid, parseISO } from "date-fns";
 import { ArrowDown, ArrowUp, ArrowUpDown } from "lucide-vue-next";
 
-/** e.g. 12/02/2022 10:30PM */
-function formatTableDateTime(value: string): string {
-  if (!value?.trim()) return "—";
-  const fromIso = parseISO(value);
-  const date = isValid(fromIso) ? fromIso : new Date(value);
-  if (!isValid(date)) return value;
-  return format(date, "dd/MM/yyyy h:mma");
-}
+export type PromoSortKey = "minimumPurchaseAmount" | "discountType" | "createdAt" | "coursesIncludedLength";
+export type PromoSortDir = "asc" | "desc";
 
-function statusBadgeClass(status: CourseStatus): string {
-  switch (status) {
-    case "PUBLISHED":
-      return "bg-emerald-100 text-emerald-800 ring-emerald-200/60";
-    case "ARCHIVED":
-      return "bg-amber-100 text-amber-900 ring-amber-200/60";
-    default:
-      return "bg-yellow-100 text-yellow-800 ring-yellow-200/60";
-  }
-}
+type PromoRow = {
+  id: string;
+  code: string;
+  minimumPurchase: number;
+  discountType: string;
+  coursesIncluded: string;
+  createdDate: string;
+};
 
 const props = withDefaults(
   defineProps<{
-    courses: CourseItem[];
-    /** Shown when there are no rows (header is hidden). */
-    emptyMessage?: string;
-    /** Global index before first row (e.g. (page − 1) × pageSize → page 2 starts at 11). */
-    rowOffset?: number;
-    sortBy: CourseSortKey;
-    sortDir: CourseSortDir;
+    promos: PromoRow[];
+    sortBy: PromoSortKey;
+    sortDir: PromoSortDir;
   }>(),
   {
-    emptyMessage: "No courses yet.",
-    rowOffset: 0,
+    sortBy: "createdAt",
+    sortDir: "desc",
   },
 );
 
 const emit = defineEmits<{
-  edit: [courseId: string];
-  sort: [key: CourseSortKey];
-  delete: [courseId: string];
+  edit: [promoId: string];
+  delete: [promoId: string];
+  sort: [key: PromoSortKey];
 }>();
 
-function ariaSortFor(key: CourseSortKey): "ascending" | "descending" | "none" {
+function formatNumber(value: number) {
+  return value.toLocaleString("en-US");
+}
+
+function ariaSortFor(key: PromoSortKey): "ascending" | "descending" | "none" {
   if (props.sortBy !== key) return "none";
   return props.sortDir === "asc" ? "ascending" : "descending";
 }
 </script>
 
 <template>
-  <div
-    :class="[
-      'w-full overflow-x-auto',
-      courses.length === 0
-        ? ''
-        : 'rounded-xl border border-gray-100 bg-white shadow-sm',
-    ]"
-  >
-    <div
-      v-if="courses.length === 0"
-      class="px-6 py-16 text-center text-body3 text-gray-500"
-      role="status"
-    >
-      {{ emptyMessage }}
-    </div>
-    <table v-else class="w-full border-collapse text-left">
+  <div class="w-full overflow-x-auto rounded-xl border border-gray-100 bg-white shadow-sm">
+    <table class="w-full border-collapse text-left">
       <thead>
         <tr class="border-b border-gray-100 bg-gray-300">
           <th class="px-6 py-4 text-body3 text-gray-800"></th>
-          <th class="px-6 py-4 text-body3 text-gray-800">Image</th>
-          <th class="px-6 py-4 text-body3 text-gray-800" scope="col">
-            Course name
-          </th>
+          <th class="px-6 py-4 text-body3 text-gray-800">Promo code</th>
           <th
             class="px-6 py-4 text-body3 text-gray-800"
             scope="col"
-            :aria-sort="ariaSortFor('status')"
+            :aria-sort="ariaSortFor('minimumPurchaseAmount')"
           >
             <button
               type="button"
               class="group inline-flex max-w-full cursor-pointer items-center gap-1.5 text-left font-medium text-gray-800 hover:text-gray-950"
-              @click="emit('sort', 'status')"
+              @click="emit('sort', 'minimumPurchaseAmount')"
             >
-              Status
+              Minimum purchase (THB)
               <ArrowUpDown
-                v-if="props.sortBy !== 'status'"
+                v-if="props.sortBy !== 'minimumPurchaseAmount'"
                 class="h-4 w-4 shrink-0 opacity-50 group-hover:opacity-80"
                 :stroke-width="2"
                 aria-hidden="true"
@@ -116,16 +84,16 @@ function ariaSortFor(key: CourseSortKey): "ascending" | "descending" | "none" {
           <th
             class="px-6 py-4 text-body3 text-gray-800"
             scope="col"
-            :aria-sort="ariaSortFor('lessonCount')"
+            :aria-sort="ariaSortFor('discountType')"
           >
             <button
               type="button"
               class="group inline-flex max-w-full cursor-pointer items-center gap-1.5 text-left font-medium text-gray-800 hover:text-gray-950"
-              @click="emit('sort', 'lessonCount')"
+              @click="emit('sort', 'discountType')"
             >
-              Lesson
+              Discount type
               <ArrowUpDown
-                v-if="props.sortBy !== 'lessonCount'"
+                v-if="props.sortBy !== 'discountType'"
                 class="h-4 w-4 shrink-0 opacity-50 group-hover:opacity-80"
                 :stroke-width="2"
                 aria-hidden="true"
@@ -147,16 +115,16 @@ function ariaSortFor(key: CourseSortKey): "ascending" | "descending" | "none" {
           <th
             class="px-6 py-4 text-body3 text-gray-800"
             scope="col"
-            :aria-sort="ariaSortFor('price')"
+            :aria-sort="ariaSortFor('coursesIncludedLength')"
           >
             <button
               type="button"
               class="group inline-flex max-w-full cursor-pointer items-center gap-1.5 text-left font-medium text-gray-800 hover:text-gray-950"
-              @click="emit('sort', 'price')"
+              @click="emit('sort', 'coursesIncludedLength')"
             >
-              Price
+              Courses Included
               <ArrowUpDown
-                v-if="props.sortBy !== 'price'"
+                v-if="props.sortBy !== 'coursesIncludedLength'"
                 class="h-4 w-4 shrink-0 opacity-50 group-hover:opacity-80"
                 :stroke-width="2"
                 aria-hidden="true"
@@ -176,7 +144,7 @@ function ariaSortFor(key: CourseSortKey): "ascending" | "descending" | "none" {
             </button>
           </th>
           <th
-            class="px-4 py-4 text-body3 text-gray-800"
+            class="px-6 py-4 text-body3 text-gray-800"
             scope="col"
             :aria-sort="ariaSortFor('createdAt')"
           >
@@ -206,92 +174,47 @@ function ariaSortFor(key: CourseSortKey): "ascending" | "descending" | "none" {
               />
             </button>
           </th>
-          <th
-            class="px-6 py-4 text-body3 text-gray-800"
-            scope="col"
-            :aria-sort="ariaSortFor('updatedAt')"
-          >
-            <button
-              type="button"
-              class="group inline-flex max-w-full cursor-pointer items-center gap-1.5 text-left font-medium text-gray-800 hover:text-gray-950"
-              @click="emit('sort', 'updatedAt')"
-            >
-              Updated date
-              <ArrowUpDown
-                v-if="props.sortBy !== 'updatedAt'"
-                class="h-4 w-4 shrink-0 opacity-50 group-hover:opacity-80"
-                :stroke-width="2"
-                aria-hidden="true"
-              />
-              <ArrowUp
-                v-else-if="props.sortDir === 'asc'"
-                class="h-4 w-4 shrink-0 text-blue-600"
-                :stroke-width="2"
-                aria-hidden="true"
-              />
-              <ArrowDown
-                v-else
-                class="h-4 w-4 shrink-0 text-blue-600"
-                :stroke-width="2"
-                aria-hidden="true"
-              />
-            </button>
-          </th>
           <th class="px-6 py-4 text-center text-body3 text-gray-800">Action</th>
         </tr>
       </thead>
 
       <tbody class="divide-y divide-gray-50">
         <tr
-          v-for="(course, index) in courses"
-          :key="course.id"
+          v-for="(promo, index) in promos"
+          :key="promo.id"
           :class="[
             'h-[88px] transition-colors hover:bg-slate-100',
             index % 2 === 0 ? 'bg-white' : 'bg-gray-50/60',
           ]"
         >
-          <td class="px-4 py-4 text-sm tabular-nums text-slate-600">
-            {{ rowOffset + index + 1 }}
-          </td>
-          <td class="px-6 py-1">
-            <img
-              :src="course.image"
-              alt="Course"
-              class="h-16 w-24 rounded-md object-cover shadow-sm"
-            >
-          </td>
-          <td class="px-6 w-[450px]  py-4">
-            <span class="font-medium  text-slate-700">
-              {{ course.name }}
-            </span>
-          </td>
-          <td class="px-6 py-4">
-            <span
-              class="inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ring-inset"
-              :class="statusBadgeClass(course.status)"
-            >
-              {{ course.statusLabel }}
-            </span>
-          </td>
           <td class="px-6 py-4 text-sm text-slate-600">
-            {{ course.lessons }}
+            {{ index + 1 }}
           </td>
           <td class="px-6 py-4 font-medium text-slate-700">
-            {{ course.price }}
+            {{ promo.code }}
           </td>
-          <td class="px-0 py-4 text-sm text-slate-500">
-            {{ formatTableDateTime(course.createdAt) }}
+          <td class="px-6 py-4 text-sm text-slate-600">
+            {{ formatNumber(promo.minimumPurchase) }}
+          </td>
+          <td class="px-6 py-4 text-sm text-slate-600">
+            {{ promo.discountType }}
+          </td>
+          <td
+            class="max-w-[220px] truncate px-6 py-4 text-sm text-slate-600"
+            :title="promo.coursesIncluded"
+          >
+            {{ promo.coursesIncluded }}
           </td>
           <td class="px-6 py-4 text-sm text-slate-500">
-            {{ formatTableDateTime(course.updatedAt) }}
+            {{ promo.createdDate }}
           </td>
           <td class="px-6 py-4 text-center">
             <div class="flex justify-center gap-3">
               <button
                 type="button"
                 class="inline-flex cursor-pointer items-center justify-center rounded-md p-1 transition hover:bg-red-50 hover:opacity-90 active:opacity-100"
-                aria-label="Delete course"
-                @click="emit('delete', course.id)"
+                aria-label="Delete promo code"
+                @click="emit('delete', promo.id)"
               >
                 <img
                   :src="iconDelete"
@@ -304,8 +227,8 @@ function ariaSortFor(key: CourseSortKey): "ascending" | "descending" | "none" {
               <button
                 type="button"
                 class="inline-flex cursor-pointer items-center justify-center rounded-md p-1 transition hover:bg-yellow-50 hover:opacity-90 active:opacity-100"
-                aria-label="Edit course"
-                @click="emit('edit', course.id)"
+                aria-label="Edit promo code"
+                @click="emit('edit', promo.id)"
               >
                 <img
                   :src="iconEdit"

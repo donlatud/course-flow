@@ -5,6 +5,9 @@ import { Search } from "lucide-vue-next";
 import { useRouter } from "vue-router";
 import Table from "@/components/admin/CourseTable.vue";
 import { api } from "@/lib/api";
+import { deleteCourse } from "@/lib/adminCoursesApi";
+import { appToast } from "@/components/base/toast";
+import Modal from "@/components/base/modal/Modal.vue";
 import type {
   CourseItem,
   CourseSortDir,
@@ -38,6 +41,10 @@ const router = useRouter();
 
 const PAGE_SIZE = 10;
 const currentPage = ref(1);
+const deleteConfirmOpen = ref(false);
+const deleteConfirmCourseId = ref<string | null>(null);
+const deleteConfirmCourseName = ref("");
+const isDeleting = ref(false);
 /** Synced from search after debounce; drives API `search` param. */
 const debouncedSearch = ref("");
 
@@ -109,6 +116,33 @@ function mapApiToCourseItem(apiItem: any): CourseItem {
   };
 }
 
+/**
+ * Spring Data `Page` → `{ content, totalElements }`.
+ * Some proxies or older handlers return a bare array — paginate on the client.
+ */
+function normalizeAdminCoursesPayload(
+  raw: unknown,
+  page: number,
+  size: number,
+): { items: unknown[]; total: number } {
+  if (Array.isArray(raw)) {
+    const total = raw.length;
+    const start = (page - 1) * size;
+    const items = raw.slice(start, start + size);
+    return { items, total };
+  }
+  if (raw && typeof raw === "object" && "content" in raw) {
+    const o = raw as { content?: unknown[]; totalElements?: unknown };
+    const content = Array.isArray(o.content) ? o.content : [];
+    const total =
+      typeof o.totalElements === "number" && Number.isFinite(o.totalElements)
+        ? o.totalElements
+        : content.length;
+    return { items: content, total };
+  }
+  return { items: [], total: 0 };
+}
+
 async function fetchCourses() {
   try {
     isLoading.value = true;
@@ -124,14 +158,13 @@ async function fetchCourses() {
           : {}),
       },
     });
-    const data = response.data as {
-      content?: unknown[];
-      totalElements?: number;
-    };
-    courses.value = (data.content ?? []).map((item) =>
-      mapApiToCourseItem(item),
+    const { items, total } = normalizeAdminCoursesPayload(
+      response.data,
+      currentPage.value,
+      PAGE_SIZE,
     );
-    totalElements.value = data.totalElements ?? 0;
+    courses.value = items.map((item) => mapApiToCourseItem(item));
+    totalElements.value = total;
   } catch (error: any) {
     console.error(error);
     errorMessage.value =
@@ -149,6 +182,40 @@ function goToCourseCreate() {
 function goToCourseEdit(courseId: string) {
   resetCourseDraft();
   router.push({ name: "admin-course-edit", params: { courseId } });
+}
+
+function openDeleteConfirm(courseId: string) {
+  const item = courses.value.find((c) => c.id === courseId);
+  deleteConfirmCourseId.value = courseId;
+  deleteConfirmCourseName.value = item?.name ?? courseId;
+  deleteConfirmOpen.value = true;
+}
+
+async function confirmDelete() {
+  const id = deleteConfirmCourseId.value;
+  if (!id) return;
+  isDeleting.value = true;
+  try {
+    await deleteCourse(id);
+    deleteConfirmOpen.value = false;
+    deleteConfirmCourseId.value = null;
+    appToast.success("Course deleted", `"${deleteConfirmCourseName.value}" has been removed.`);
+    await fetchCourses();
+  } catch (err: unknown) {
+    const message =
+      err && typeof err === "object" && "response" in err
+        ? (err as { response?: { data?: { message?: string } } }).response?.data?.message
+        : null;
+    appToast.error("Delete failed", message ?? "Could not delete the course. It may have active enrollments.");
+  } finally {
+    isDeleting.value = false;
+  }
+}
+
+function cancelDelete() {
+  deleteConfirmOpen.value = false;
+  deleteConfirmCourseId.value = null;
+  deleteConfirmCourseName.value = "";
 }
 </script>
 
@@ -229,6 +296,21 @@ function goToCourseEdit(courseId: string) {
             :sort-dir="sortDir"
             @edit="goToCourseEdit"
             @sort="onSortColumn"
+            @delete="openDeleteConfirm"
+          />
+
+          <Modal
+            v-model:open="deleteConfirmOpen"
+            title="Confirmation"
+            message="Are you sure you want to delete this course?"
+            left-text="No, Keep it"
+            right-text="Yes, I want to delete this course"
+            type="primary"
+            variant="danger"
+            right-button-class="w-[310px]"
+            left-button-class="w-[147px]"
+            @left-click="cancelDelete"
+            @right-click="confirmDelete"
           />
 
           <div
