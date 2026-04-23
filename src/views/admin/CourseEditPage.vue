@@ -558,33 +558,7 @@ function handleUpdateAsPublic() {
               />
             </div>
 
-            <div class="flex flex-col gap-4">
-              <div class="flex items-center gap-3">
-                <input
-                  id="promo-checkbox"
-                  v-model="courseDraftState.promoEnabled"
-                  type="checkbox"
-                  class="h-5 w-5 shrink-0 rounded border-gray-300 text-blue-600 focus:ring-2 focus:ring-blue-500/30"
-                />
-                <label
-                  for="promo-checkbox"
-                  class="cursor-pointer text-body3 text-gray-800"
-                >
-                  Promo Code
-                </label>
-              </div>
-
-              <PromoCard
-                v-if="courseDraftState.promoEnabled"
-                v-model:promo-code="courseDraftState.promoCode"
-                v-model:min-purchase="courseDraftState.promoMinPurchase"
-                v-model:discount-type="courseDraftState.promoDiscountType"
-                v-model:discount-thb="courseDraftState.promoDiscountThb"
-                v-model:discount-percent="courseDraftState.promoDiscountPercent"
-                v-model:valid-from="courseDraftState.promoValidFrom"
-                v-model:valid-until="courseDraftState.promoValidUntil"
-              />
-            </div>
+            
 
             <div class="flex w-full flex-col gap-1">
               <label

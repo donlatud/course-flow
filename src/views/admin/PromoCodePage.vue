@@ -123,21 +123,6 @@ async function fetchPromoCodes() {
     isLoading.value = true;
     errorMessage.value = null;
 
-    let totalCoursesInDb = 0;
-    try {
-      const { data: pageData } = await api.get("/api/admin/courses", {
-        params: {
-          page: 0,
-          size: 1,
-          sortBy: "createdAt",
-          sortDir: "desc",
-        },
-      });
-      totalCoursesInDb = getTotal(pageData);
-    } catch {
-      totalCoursesInDb = 0;
-    }
-
     const { data } = await api.get<PageData>("/api/admin/courses/promo-codes", {
       params: {
         page: pageNum,
@@ -148,7 +133,7 @@ async function fetchPromoCodes() {
     });
 
     if (data && Array.isArray(data.content)) {
-      promoCodes.value = data.content.map((row) => mapApiToRow(row, totalCoursesInDb));
+      promoCodes.value = data.content.map((row) => mapApiToRow(row, 0));
       totalElements.value = getTotal(data);
     } else {
       promoCodes.value = [];
@@ -355,14 +340,14 @@ async function confirmDeletePromo() {
 
     <Modal
       v-model:open="deleteModalOpen"
-      :title="`Delete promo code`"
-      :message="`Are you sure you want to delete the promo code '${promoToDelete?.code}'?`"
-      left-text="Cancel"
-      right-text="Delete"
+      title="Confirmation"
+      message="Are you sure you want to delete this promo code?"
+      left-text="No, Keep it"
+      right-text="Yes, I want to delete this promo code"
+      type="primary"
       variant="danger"
-      :class="'max-w-[400px]'"
-      :left-button-class="'flex-1'"
-      :right-button-class="'flex-1'"
+      right-button-class="w-[310px]"
+      left-button-class="w-[147px]"
       @left-click="deleteModalOpen = false"
       @right-click="confirmDeletePromo"
     />

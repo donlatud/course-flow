@@ -301,16 +301,16 @@ function cancelDelete() {
 
           <Modal
             v-model:open="deleteConfirmOpen"
-            title="Delete course?"
-            :message="`Are you sure you want to delete &quot;${deleteConfirmCourseName}&quot;? This action cannot be undone.`"
-            left-text="Delete"
-            right-text="Cancel"
-            type="secondary"
+            title="Confirmation"
+            message="Are you sure you want to delete this course?"
+            left-text="No, Keep it"
+            right-text="Yes, I want to delete this course"
+            type="primary"
             variant="danger"
-            :left-button-disabled="isDeleting"
-            :left-button-class="isDeleting ? 'opacity-60' : ''"
-            @left-click="confirmDelete"
-            @right-click="cancelDelete"
+            right-button-class="w-[310px]"
+            left-button-class="w-[147px]"
+            @left-click="cancelDelete"
+            @right-click="confirmDelete"
           />
 
           <div
