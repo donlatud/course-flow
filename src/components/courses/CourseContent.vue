@@ -1,7 +1,7 @@
 <template>
   <div class="bg-white  py-6">
     <div class="flex items-center justify-between mb-6">
-      <h2 class="text-2xl font-bold text-gray-900">Module Samples</h2>
+      <h2 class="md:text-headline2 text-headline3 text-black">Module Samples</h2>
     </div>
 
     <!-- Course Content -->
@@ -17,9 +17,9 @@
           @click="toggleModule(module.moduleId)"
         >
           <div class="flex items-center justify-around gap-6 pb-2">
-              <span class="text-body1  text-gray-700">{{ String(module.orderIndex).padStart(2, '0') }}</span>
+              <span class="text-body1 md:text-headline3  text-gray-700">{{ String(module.orderIndex).padStart(2, '0') }}</span>
             <div>
-              <h3 class="text-body1 max-w-[246px]">{{ module.title }}</h3>
+              <h3 class="text-body1 md:text-headline3 max-w-[246px]">{{ module.title }}</h3>
             </div>
           </div>
           <div class="flex items-center gap-3">
