@@ -2,11 +2,11 @@
   <div class="sticky top-8 space-y-6">
     <div class="bg-white rounded-lg border border-gray-200 shadow-sm px-6 py-8 gap-6 flex flex-col">
       <span class="text-sm text-orange-500">Course</span>
-      <h1 class="text-xl font-bold text-gray-900">{{ course?.title }}</h1>
+      <h1 class="text-headline3 text-black">{{ course?.title }}</h1>
       
-      <span class="text-headline3 font-medium text-gray-700">{{ course?.description }} course</span>
+      <span class="text-body2 font-medium text-gray-700">{{ course?.description }} course</span>
 
-      <div v-if="!isPurchased" class="text-2xl font-bold text-gray-900">
+      <div v-if="!isPurchased" class="text-headline3 text-gray-700">
         THB {{ course?.price }}
       </div>  
 

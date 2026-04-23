@@ -41,10 +41,13 @@
                 </div>
               </div>
 
-              <div class="flex flex-col gap-4">
-                <span class="text-headline3 font-medium">Course Detail</span>
-                <p class="text-lg text-gray-600 mb-6 leading-relaxed">{{ course.description }}</p>
-              </div>
+                <!-- Course Info -->
+                <div class="flex flex-col gap-4">
+                  <span class="md:text-headline2 text-headline3 font-medium">Course Detail</span>
+                  <p class="md:text-body2 text-body3 text-gray-600 mb-6 leading-relaxed">
+                    {{ course.description }}
+                  </p>
+                </div>
 
               <div class="mt-8">
                 <CourseContent :modules="course.modules || []" @material-selected="handleMaterialSelected" />
