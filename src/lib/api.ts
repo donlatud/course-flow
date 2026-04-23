@@ -16,7 +16,7 @@ export const api = axios.create({
   },
 });
 
-type ApiRequestConfig = InternalAxiosRequestConfig & {
+export type ApiRequestConfig = InternalAxiosRequestConfig & {
   skipAuthRedirect?: boolean;
   /** Set after one refresh+retry so we do not loop */
   _retryAfter401?: boolean;
@@ -96,12 +96,16 @@ api.interceptors.request.use(async (config) => {
 api.interceptors.response.use(
   (response) => response,
   async (error: unknown) => {
-    const status = axios.isAxiosError(error) ? error.response?.status : undefined;
+    const ax = error as {
+      config?: ApiRequestConfig & { _authRetry?: boolean };
+      response?: { status?: number };
+    };
+    const status = ax.response?.status;
     if (status !== 401) {
       return Promise.reject(error);
     }
 
-    const originalRequest = error.config as RequestWithAuthRetry | undefined;
+    const originalRequest = ax.config;
     if (originalRequest && !originalRequest._authRetry) {
       originalRequest._authRetry = true;
       const { data: refreshed, error: refreshErr } =
@@ -114,10 +118,6 @@ api.interceptors.response.use(
       }
     }
 
-    const ax = error as {
-      config?: ApiRequestConfig;
-      response?: { status?: number };
-    };
     const config = ax.config;
     if (!config) {
       return Promise.reject(error);

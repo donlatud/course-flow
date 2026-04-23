@@ -3,7 +3,7 @@ import { ref } from "vue";
 import CustomInput from "@/components/base/input/CustomInput.vue";
 import NumberInput from "@/components/base/input/NumberInput.vue";
 import Modal from "@/components/base/modal/Modal.vue";
-import { User } from "lucide-vue-next";
+
 
 const promoCode = defineModel<string>("promoCode", { default: "" });
 const minPurchase = defineModel<string>("minPurchase", { default: "" });
@@ -14,8 +14,8 @@ const discountThb = defineModel<string>("discountThb", { default: "" });
 const discountPercent = defineModel<string>("discountPercent", {
   default: "",
 });
-const validFrom = defineModel<string>("validFrom", { default: "" });
-const validUntil = defineModel<string>("validUntil", { default: "" });
+
+
 
 const showSwitchModal = ref(false);
 const pendingSwitchType = ref<"THB" | "%" | null>(null);

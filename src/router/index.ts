@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from "vue-router";
+import type { ApiRequestConfig } from "@/lib/api";
 import HomeView from "@/views/HomeView.vue";
 import CoursePage from "@/views/admin/CoursePage.vue";
 import CourseCreatePage from "@/views/admin/CourseCreatePage.vue";
@@ -163,10 +164,10 @@ router.beforeEach(async (to) => {
 
   try {
     /** ไม่ให้ interceptor ทำ window.location บน 401 — ให้ guard ตัดสิน (กันสับสนกับ 5xx / network) */
-    const { data: me } = await api.get<{ role: string }>("/api/users/me", {
+    const res = await api.get<{ role: string }>("/api/users/me", {
       skipAuthRedirect: true,
-    });
-    if (me.role !== "ADMIN") {
+    } as ApiRequestConfig);
+    if (res.data.role !== "ADMIN") {
       return { path: "/", replace: true };
     }
   } catch (e) {

@@ -6,7 +6,6 @@ import CustomInput from "@/components/base/input/CustomInput.vue";
 import NumberInput from "@/components/base/input/NumberInput.vue";
 import AttachFileInput from "@/components/base/input/AttachFileInput.vue";
 import MediaInput from "@/components/base/input/MediaInput.vue";
-import PromoCard from "@/components/admin/PromoCard.vue";
 import LessonTable from "@/components/admin/LessonTable.vue";
 import Modal from "@/components/base/modal/Modal.vue";
 import SubmitProgressOverlay from "@/components/base/SubmitProgressOverlay.vue";
